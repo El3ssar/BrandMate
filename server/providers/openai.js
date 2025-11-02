@@ -26,9 +26,13 @@ export async function destillWithOpenAI({ labelDescription, images, pdfTexts = [
     throw new Error("OPENAI_API_KEY is not configured. Please set it in your .env file.");
   }
 
-  const temperature = aiParameters.temperature ?? 0.7;
-  const max_tokens = aiParameters.maxTokens ?? 4096;
+  // gpt-5 only supports temperature 1
+  const temperature = (model.startsWith('gpt-5')) ? 1 : (aiParameters.temperature ?? 0.7);
   const top_p = aiParameters.topP ?? 1.0;
+  
+  // gpt-4o, gpt-5 and newer models use max_completion_tokens instead of max_tokens
+  const maxTokensParam = (model.includes('o') || model.startsWith('gpt-5')) ? 'max_completion_tokens' : 'max_tokens';
+  const maxTokensValue = aiParameters.maxTokens ?? 4096;
 
   // Build PDF context if available
   let pdfContext = '';
@@ -93,7 +97,7 @@ NO introducción. MÁXIMO detalle posible.
     model,
     response_format: { type: "text" },
     temperature,
-    max_tokens,
+    [maxTokensParam]: maxTokensValue,
     top_p,
     messages: [
       { role: "system", content: systemPrompt },
@@ -232,9 +236,13 @@ export async function reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelD
     throw new Error("OPENAI_API_KEY is not configured. Please set it in your .env file.");
   }
   
-  const temperature = aiParameters.temperature ?? 0.7;
-  const max_tokens = aiParameters.maxTokens ?? 4096;
+  // gpt-5 only supports temperature 1
+  const temperature = (model.startsWith('gpt-5')) ? 1 : (aiParameters.temperature ?? 0.7);
   const top_p = aiParameters.topP ?? 1.0;
+  
+  // gpt-4o, gpt-5 and newer models use max_completion_tokens instead of max_tokens
+  const maxTokensParam = (model.includes('o') || model.startsWith('gpt-5')) ? 'max_completion_tokens' : 'max_tokens';
+  const maxTokensValue = aiParameters.maxTokens ?? 4096;
 
   const systemPrompt = `
 Eres un **Auditor de Brand Compliance Senior Experto**.
@@ -307,7 +315,7 @@ Compara los assets contra las referencias visuales directamente.
     model,
     response_format: { type: "json_object" },
     temperature,
-    max_tokens,
+    [maxTokensParam]: maxTokensValue,
     top_p,
     messages: [
       { role: "system", content: systemPrompt },
