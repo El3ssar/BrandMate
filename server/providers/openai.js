@@ -18,13 +18,17 @@ function toImagePart(img) {
   };
 }
 
-export async function destillWithOpenAI({ labelDescription, images, pdfTexts = [] }) {
+export async function destillWithOpenAI({ labelDescription, images, pdfTexts = [], customPrompt, aiParameters = {} }) {
   const apiKey = getOpenAIKey();
   const model = getOpenAIModel();
   
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured. Please set it in your .env file.");
   }
+
+  const temperature = aiParameters.temperature ?? 0.7;
+  const max_tokens = aiParameters.maxTokens ?? 4096;
+  const top_p = aiParameters.topP ?? 1.0;
 
   // Build PDF context if available
   let pdfContext = '';
@@ -36,7 +40,8 @@ export async function destillWithOpenAI({ labelDescription, images, pdfTexts = [
     pdfContext += '\n--- FIN PDFs ---\n';
   }
 
-  const systemPrompt = `
+  // Use custom prompt if provided, otherwise use default
+  const systemPrompt = customPrompt || `
 Eres un **Destilador de Guías de Marca Visual Experto**. Analiza las imágenes y el contenido de PDFs para crear reglas de marca completas y MUY detalladas.
 
 ESTRUCTURA OBLIGATORIA (sé extremadamente específico):
@@ -85,8 +90,11 @@ NO introducción. MÁXIMO detalle posible.
   ];
 
   const payload = {
-    model: model,
+    model,
     response_format: { type: "text" },
+    temperature,
+    max_tokens,
+    top_p,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent }
@@ -216,13 +224,17 @@ NO introducción. MÁXIMO detalle posible.
   }
 }
 
-export async function reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
+export async function reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [], aiParameters = {} }) {
   const apiKey = getOpenAIKey();
   const model = getOpenAIModel();
   
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured. Please set it in your .env file.");
   }
+  
+  const temperature = aiParameters.temperature ?? 0.7;
+  const max_tokens = aiParameters.maxTokens ?? 4096;
+  const top_p = aiParameters.topP ?? 1.0;
 
   const systemPrompt = `
 Eres un **Auditor de Brand Compliance Senior Experto**.
@@ -292,8 +304,11 @@ Compara los assets contra las referencias visuales directamente.
   ];
 
   const payload = {
-    model: model,
+    model,
     response_format: { type: "json_object" },
+    temperature,
+    max_tokens,
+    top_p,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent }

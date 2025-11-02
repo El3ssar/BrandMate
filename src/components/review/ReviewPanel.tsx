@@ -4,16 +4,18 @@ import { api } from '@/services/api';
 import { FileUpload } from '../brand/FileUpload';
 import { ReviewQueue } from './ReviewQueue';
 import { AuditResultCard } from '../brand/AuditResultCard';
+import { ReviewConfigModal } from '../config/ReviewConfigModal';
 import type { FileData, AuditResult } from '@/types';
 import type { ReviewJob } from '@/types/review';
 
 export function ReviewPanel() {
-  const { currentSession } = useApp();
+  const { currentSession, updateSession } = useApp();
   const [reviewAssets, setReviewAssets] = useState<FileData[]>([]);
   const [currentAudit, setCurrentAudit] = useState<AuditResult | null>(null);
   const [runningReviews, setRunningReviews] = useState<ReviewJob[]>([]);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showReviewConfig, setShowReviewConfig] = useState(false);
 
   // Load last audit when session changes
   useEffect(() => {
@@ -84,26 +86,11 @@ export function ReviewPanel() {
         ...session.incorrectLabelImages,
       ];
 
-      // Build asset list with explicit filenames for the LLM
       const assetList = job.assets.map((asset, idx) => 
         `Asset ${idx}: "${asset.name || `unnamed-${idx}.jpg`}"`
       ).join('\n');
-      
-      console.log('🔍 Sending to review:', {
-        assetsCount: job.assets.length,
-        assetNames: job.assets.map(a => a.name),
-        visualContextCount: fullContext.length
-      });
 
-      const response = await api.review(
-        session.provider,
-        session.id,
-        {
-          brandGuidelines: session.textGuidelines,
-          visualAnalysis: session.visualAnalysis,
-          labelDescription: session.labelDescription,
-          visualContext: fullContext,  // Include all visual references
-          reviewQuery: `**COMPREHENSIVE BRAND AUDIT - PER ASSET:**
+      const customQuery = session.customReviewPrompt || `**COMPREHENSIVE BRAND AUDIT - PER ASSET:**
 
 You will receive ${fullContext.length} REFERENCE files (design system, examples, labels) followed by ${job.assets.length} ASSETS TO REVIEW.
 
@@ -122,8 +109,19 @@ Review for:
 4) Typography (fonts, sizes, alignment, readability)
 5) Colors (palette adherence, contrast, proportions)
 6) Logo usage (placement, size, clear space)
-7) Accessibility (legibility, contrast ratios)`,
+7) Accessibility (legibility, contrast ratios)`;
+
+      const response = await api.review(
+        session.provider,
+        session.id,
+        {
+          brandGuidelines: session.textGuidelines,
+          visualAnalysis: session.visualAnalysis,
+          labelDescription: session.labelDescription,
+          visualContext: fullContext,
+          reviewQuery: customQuery,
           assets: job.assets,
+          aiParameters: session.aiParameters,
         }
       );
 
@@ -179,6 +177,7 @@ Review for:
   }
 
   return (
+    <>
     <div className="h-full flex gap-6 p-6">
       {/* Left Sidebar - Review Queue */}
       <div className="w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex flex-col border border-gray-200 dark:border-gray-700">
@@ -195,7 +194,16 @@ Review for:
       <div className="w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col border border-gray-200 dark:border-gray-700">
         <div className="flex-1 overflow-y-auto">
         <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Start New Review</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Start New Review</h2>
+          <button
+            onClick={() => setShowReviewConfig(true)}
+            className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg font-semibold transition-colors"
+            title="Configure review instructions"
+          >
+            📝 Configure
+          </button>
+        </div>
         
         {/* Running Reviews - Only show currently running */}
         {runningReviews.filter(j => j.status === 'running').length > 0 && (
@@ -315,6 +323,17 @@ Review for:
         </div>
       </div>
     </div>
+    
+    {showReviewConfig && currentSession && (
+      <ReviewConfigModal
+        session={currentSession}
+        onSave={async (prompt) => {
+          await updateSession(currentSession.id, { customReviewPrompt: prompt });
+        }}
+        onClose={() => setShowReviewConfig(false)}
+      />
+    )}
+    </>
   );
 }
 

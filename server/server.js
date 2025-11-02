@@ -37,7 +37,7 @@ function pickProvider(name) {
 
 app.post("/api/destill", async (req, res) => {
   try {
-    const { provider, labelDescription, images, stream = false } = req.body;
+    const { provider, labelDescription, images, stream = false, customPrompt, aiParameters = {} } = req.body;
     const chosen = pickProvider(provider);
 
     if (!Array.isArray(images) || images.length === 0) {
@@ -77,7 +77,7 @@ app.post("/api/destill", async (req, res) => {
       let resultText;
       
       if (chosen === "gemini") {
-        resultText = await destillWithGemini({ labelDescription, files: images });
+        resultText = await destillWithGemini({ labelDescription, files: images, customPrompt, aiParameters });
       } else {
         const onlyImages = images.filter(f => f.mimeType?.startsWith('image/'));
         if (onlyImages.length === 0) {
@@ -85,8 +85,8 @@ app.post("/api/destill", async (req, res) => {
         }
 
         resultText = chosen === "openai"
-          ? await destillWithOpenAI({ labelDescription, images: onlyImages, pdfTexts: [] })
-          : await destillWithGrok({ labelDescription, images: onlyImages, pdfTexts: [] });
+          ? await destillWithOpenAI({ labelDescription, images: onlyImages, pdfTexts: [], customPrompt, aiParameters })
+          : await destillWithGrok({ labelDescription, images: onlyImages, pdfTexts: [], customPrompt, aiParameters });
       }
 
       res.json({ ok: true, text: resultText });
@@ -99,7 +99,7 @@ app.post("/api/destill", async (req, res) => {
 
 app.post("/api/review", optionalAuth, async (req, res) => {
   try {
-    const { provider, brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] } = req.body;
+    const { provider, brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [], aiParameters = {} } = req.body;
     const chosen = pickProvider(provider);
 
     if (!Array.isArray(assets) || assets.length === 0) {
@@ -116,10 +116,10 @@ app.post("/api/review", optionalAuth, async (req, res) => {
       : visualContext.filter(f => f.mimeType?.startsWith('image/'));
 
     const resultJSON = chosen === "gemini"
-      ? await reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages })
+      ? await reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages, aiParameters })
       : chosen === "openai"
-      ? await reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages })
-      : await reviewWithGrok({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages });
+      ? await reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages, aiParameters })
+      : await reviewWithGrok({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets: onlyImages, visualContext: contextImages, aiParameters });
 
     if (req.user && req.body.sessionId) {
       try {

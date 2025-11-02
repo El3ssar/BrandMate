@@ -3,6 +3,8 @@ import { useApp } from '@/store/AppContext';
 import { api } from '@/services/api';
 import { ColorPalette } from './ColorPalette';
 import { FileUpload } from './FileUpload';
+import { DistillConfigModal } from '../config/DistillConfigModal';
+import { GlobalConfigModal } from '../config/GlobalConfigModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { BrandColor, FileData } from '@/types';
@@ -22,6 +24,8 @@ export function BrandConfiguration() {
   const [statusMessage, setStatusMessage] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
   const [editingRules, setEditingRules] = useState(false);
+  const [showDistillConfig, setShowDistillConfig] = useState(false);
+  const [showGlobalConfig, setShowGlobalConfig] = useState(false);
 
   // Load session data when selected
   useEffect(() => {
@@ -101,95 +105,22 @@ export function BrandConfiguration() {
     setVisualAnalysis(''); // Clear previous content
 
     try {
-      // Try streaming first
-      const useStreaming = true;
-      
-      if (useStreaming) {
-        const response = await fetch('/api/destill', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            provider: currentSession.provider,
-            labelDescription,
-            images: contextImages,
-            stream: true
-          }),
-        });
+      const response = await api.distill(currentSession.provider, {
+        labelDescription,
+        images: contextImages,
+        customPrompt: currentSession.customDistillPrompt,
+        aiParameters: currentSession.aiParameters,
+      });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.chunk) {
-                  accumulated += data.chunk;
-                  setVisualAnalysis(accumulated);
-                }
-                if (data.done) {
-                  setStatusMessage('Distillation completed successfully!');
-                }
-                if (data.error) {
-                  setStatusMessage(`Error: ${data.error}`);
-                }
-              } catch (e) {
-                console.error('Stream parse error:', e);
-              }
-            }
-          }
-        }
-        
-        // If no content accumulated, something went wrong
-        if (!accumulated) {
-          throw new Error('No content received from stream');
-        }
+      if (response.ok && response.data) {
+        setVisualAnalysis(response.data.text);
+        setStatusMessage('Distillation completed successfully!');
       } else {
-        // Fallback to non-streaming
-        const response = await api.distill(currentSession.provider, {
-          labelDescription,
-          images: contextImages,
-        });
-
-        if (response.ok && response.data) {
-          setVisualAnalysis(response.data.text);
-          setStatusMessage('Distillation completed successfully!');
-        } else {
-          setStatusMessage(`Error: ${response.error}`);
-        }
+        setStatusMessage(`Error: ${response.error || 'Failed to distill'}`);
       }
     } catch (error) {
       console.error('Distill error:', error);
       setStatusMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
-      // Try fallback to non-streaming on error
-      try {
-        const response = await api.distill(currentSession.provider, {
-          labelDescription,
-          images: contextImages,
-        });
-
-        if (response.ok && response.data) {
-          setVisualAnalysis(response.data.text);
-          setStatusMessage('Distillation completed successfully!');
-        }
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-      }
     } finally {
       setDistilling(false);
     }
@@ -350,7 +281,25 @@ export function BrandConfiguration() {
 
         {/* Distill Button */}
         <div className="card bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">🤖 Step 5: Generate Visual Rules</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">🤖 Step 5: Generate Visual Rules</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowGlobalConfig(true)}
+                className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg font-semibold transition-colors"
+                title="AI Parameters"
+              >
+                ⚙️ AI Settings
+              </button>
+              <button
+                onClick={() => setShowDistillConfig(true)}
+                className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg font-semibold transition-colors"
+                title="Customize distill instructions"
+              >
+                📝 Configure
+              </button>
+            </div>
+          </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             AI will analyze your uploaded images and create detailed visual compliance rules.
           </p>
@@ -430,6 +379,26 @@ export function BrandConfiguration() {
           )}
         </div>
       </div>
+      
+      {showDistillConfig && (
+        <DistillConfigModal
+          session={currentSession}
+          onSave={async (prompt) => {
+            await updateSession(currentSession.id, { customDistillPrompt: prompt });
+          }}
+          onClose={() => setShowDistillConfig(false)}
+        />
+      )}
+      
+      {showGlobalConfig && (
+        <GlobalConfigModal
+          session={currentSession}
+          onSave={async (params) => {
+            await updateSession(currentSession.id, { aiParameters: params });
+          }}
+          onClose={() => setShowGlobalConfig(false)}
+        />
+      )}
     </div>
   );
 }

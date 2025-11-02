@@ -17,6 +17,12 @@ export interface FileData {
   name?: string;
 }
 
+export interface AIParameters {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+}
+
 export interface BrandSession {
   id: string;
   userId: string;
@@ -31,6 +37,9 @@ export interface BrandSession {
   fewShotImages: FileData[];
   correctLabelImages: FileData[];
   incorrectLabelImages: FileData[];
+  customDistillPrompt?: string;
+  customReviewPrompt?: string;
+  aiParameters?: AIParameters;
   createdAt: string;
   updatedAt: string;
 }
@@ -102,6 +111,8 @@ export interface ApiResponse<T = any> {
 export interface DistillRequest {
   labelDescription: string;
   images: FileData[];
+  customPrompt?: string;
+  aiParameters?: AIParameters;
 }
 
 export interface ReviewRequest {
@@ -110,7 +121,8 @@ export interface ReviewRequest {
   labelDescription: string;
   reviewQuery: string;
   assets: FileData[];
-  visualContext?: FileData[];  // PDF, examples, labels for full context
+  visualContext?: FileData[];
+  aiParameters?: AIParameters;
 }
 
 export interface SessionExport {

@@ -21,15 +21,19 @@ function makeInlineParts(files) {
   }));
 }
 
-export async function destillWithGemini({ labelDescription, files }) {
+export async function destillWithGemini({ labelDescription, files, customPrompt, aiParameters = {} }) {
   const apiKey = getGeminiKey();
   
   if (!apiKey) {
     throw new Error("GOOGLE_API_KEY is not configured. Please set it in your .env file.");
   }
 
-  // Gemini can handle PDFs natively, so we pass all files (images + PDFs) directly
-  const systemPrompt = `
+  const temperature = aiParameters.temperature ?? 0.7;
+  const maxOutputTokens = aiParameters.maxTokens ?? 8192;
+  const topP = aiParameters.topP ?? 0.95;
+
+  // Use custom prompt if provided, otherwise use default
+  const systemPrompt = customPrompt || `
 Eres un **Destilador de Guías de Marca Visual Experto**. Analiza TODOS los archivos proporcionados (PDFs e imágenes) para crear reglas de marca completas y detalladas.
 
 ESTRUCTURA OBLIGATORIA (sé muy específico y detallado):
@@ -89,7 +93,12 @@ NO incluyas introducción. Solo el documento de reglas detallado y específico. 
 
   const payload = {
     contents: [{ role: "user", parts }],
-    systemInstruction: { parts: [{ text: systemPrompt }] }
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: {
+      temperature,
+      maxOutputTokens,
+      topP
+    }
   };
 
   const resp = await fetch(getGeminiURL(), {
@@ -221,12 +230,16 @@ NO incluyas introducción. Solo el documento de reglas detallado y específico. 
   }
 }
 
-export async function reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
+export async function reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [], aiParameters = {} }) {
   const apiKey = getGeminiKey();
   
   if (!apiKey) {
     throw new Error("GOOGLE_API_KEY is not configured. Please set it in your .env file.");
   }
+  
+  const temperature = aiParameters.temperature ?? 0.7;
+  const maxOutputTokens = aiParameters.maxTokens ?? 8192;
+  const topP = aiParameters.topP ?? 0.95;
 
   const systemPrompt = `
 Eres un **Auditor de Brand Compliance Senior Experto**. 
@@ -313,7 +326,10 @@ Compara los assets a revisar contra TODAS las referencias visuales proporcionada
     contents: [{ role: "user", parts }],
     systemInstruction: { parts: [{ text: systemPrompt }] },
     generationConfig: {
-      responseMimeType: "application/json"
+      responseMimeType: "application/json",
+      temperature,
+      maxOutputTokens,
+      topP
     }
   };
 

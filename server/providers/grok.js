@@ -18,13 +18,17 @@ function toImagePart(img) {
   };
 }
 
-export async function destillWithGrok({ labelDescription, images, pdfTexts = [] }) {
+export async function destillWithGrok({ labelDescription, images, pdfTexts = [], customPrompt, aiParameters = {} }) {
   const apiKey = getGrokKey();
   const model = getGrokModel();
   
   if (!apiKey) {
     throw new Error("XAI_API_KEY is not configured. Please set it in your .env file.");
   }
+
+  const temperature = aiParameters.temperature ?? 0.7;
+  const max_tokens = aiParameters.maxTokens ?? 4096;
+  const top_p = aiParameters.topP ?? 1.0;
 
   // Build PDF context if available
   let pdfContext = '';
@@ -36,7 +40,8 @@ export async function destillWithGrok({ labelDescription, images, pdfTexts = [] 
     pdfContext += '\n--- FIN PDFs ---\n';
   }
 
-  const systemPrompt = `
+  // Use custom prompt if provided, otherwise use default
+  const systemPrompt = customPrompt || `
 Eres un **Destilador de Guías de Marca Visual Experto**. Crea reglas MUY detalladas basadas en las imágenes y PDFs.
 
 ESTRUCTURA (máximo detalle):
@@ -61,7 +66,10 @@ NO introducción. MÁXIMO detalle.
   ];
 
   const payload = {
-    model: model,
+    model,
+    temperature,
+    max_tokens,
+    top_p,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent }
@@ -167,13 +175,17 @@ NO introducción. MÁXIMO detalle.
   }
 }
 
-export async function reviewWithGrok({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
+export async function reviewWithGrok({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [], aiParameters = {} }) {
   const apiKey = getGrokKey();
   const model = getGrokModel();
   
   if (!apiKey) {
     throw new Error("XAI_API_KEY is not configured. Please set it in your .env file.");
   }
+  
+  const temperature = aiParameters.temperature ?? 0.7;
+  const max_tokens = aiParameters.maxTokens ?? 4096;
+  const top_p = aiParameters.topP ?? 1.0;
 
   const systemPrompt = `
 Eres un **Auditor de Brand Compliance Senior Experto**.
@@ -231,9 +243,10 @@ IMPORTANTE: Usa el "asset_name" EXACTO de la lista en tu respuesta JSON.
   ];
 
   const payload = {
-    model: model,
-    // Algunos endpoints Grok aún no soportan response_format: json_object;
-    // Por eso parsearemos en frontend/server y validaremos.
+    model,
+    temperature,
+    max_tokens,
+    top_p,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userContent }

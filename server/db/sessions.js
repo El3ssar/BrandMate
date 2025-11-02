@@ -99,6 +99,18 @@ export const sessionDb = {
       updates.push('incorrect_label_images = ?');
       values.push(JSON.stringify(data.incorrectLabelImages));
     }
+    if (data.customDistillPrompt !== undefined) {
+      updates.push('custom_distill_prompt = ?');
+      values.push(data.customDistillPrompt);
+    }
+    if (data.customReviewPrompt !== undefined) {
+      updates.push('custom_review_prompt = ?');
+      values.push(data.customReviewPrompt);
+    }
+    if (data.aiParameters !== undefined) {
+      updates.push('ai_parameters = ?');
+      values.push(JSON.stringify(data.aiParameters));
+    }
 
     if (updates.length === 0) return this.findById(id);
 
@@ -134,6 +146,9 @@ export const sessionDb = {
       fewShotImages: JSON.parse(session.few_shot_images || '[]'),
       correctLabelImages: JSON.parse(session.correct_label_images || '[]'),
       incorrectLabelImages: JSON.parse(session.incorrect_label_images || '[]'),
+      customDistillPrompt: session.custom_distill_prompt || '',
+      customReviewPrompt: session.custom_review_prompt || '',
+      aiParameters: JSON.parse(session.ai_parameters || '{}'),
       createdAt: session.created_at,
       updatedAt: session.updated_at
     };
