@@ -23,28 +23,28 @@ export function ColorPalette({ colors, onChange }: ColorPaletteProps) {
 
   return (
     <div className="card">
-      <label className="block text-sm font-bold text-gray-900 mb-2">
+      <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
         🎨 Step 1: Color Palette
       </label>
-      <p className="text-sm text-gray-600 mb-3">
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
         Define your brand's official colors. Add at least 2-3 primary brand colors.
       </p>
       
       {/* Existing colors */}
       <div className="space-y-2 mb-4">
         {colors.map((color) => (
-          <div key={color.hex} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
+          <div key={color.hex} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
             <div className="flex items-center gap-3">
               <div
-                className="color-display"
+                className="color-display border-gray-300 dark:border-gray-600"
                 style={{ background: color.hex }}
               />
-              <span className="font-semibold text-sm">{color.name}:</span>
-              <span className="font-mono text-sm text-brand-700">{color.hex}</span>
+              <span className="font-semibold text-sm dark:text-gray-200">{color.name}:</span>
+              <span className="font-mono text-sm text-brand-700 dark:text-brand-400">{color.hex}</span>
             </div>
             <button
               onClick={() => removeColor(color.hex)}
-              className="text-red-600 hover:text-red-800 font-bold text-lg px-2"
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-bold text-lg px-2"
               title="Remove color"
             >
               ✕

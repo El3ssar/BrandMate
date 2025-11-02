@@ -109,13 +109,19 @@ Review for:
       );
 
       if (response.ok && response.data) {
+        // Add asset references to result for thumbnails
+        const resultWithAssets = {
+          ...response.data.json,
+          _assetFiles: job.assets  // Store original assets for thumbnails
+        };
+        
         // Update job as complete
         setRunningReviews(prev => prev.map(j => 
           j.id === job.id 
-            ? { ...j, status: 'complete', result: response.data.json, completedAt: new Date().toISOString() }
+            ? { ...j, status: 'complete', result: resultWithAssets, completedAt: new Date().toISOString() }
             : j
         ));
-        setCurrentAudit(response.data.json);
+        setCurrentAudit(resultWithAssets);
         setRefreshKey(prev => prev + 1); // Refresh queue
       } else {
         // Update job as error
@@ -149,7 +155,7 @@ Review for:
   return (
     <div className="h-full flex gap-6 p-6">
       {/* Left Sidebar - Review Queue */}
-      <div className="w-80 bg-white rounded-xl shadow-lg p-4 flex flex-col border border-gray-200">
+      <div className="w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex flex-col border border-gray-200 dark:border-gray-700">
         <div className="flex-1 overflow-y-auto">
           <ReviewQueue
             key={refreshKey}
@@ -160,31 +166,31 @@ Review for:
       </div>
 
       {/* Center - Upload & Controls */}
-      <div className="w-96 bg-white rounded-xl shadow-lg p-6 flex flex-col border border-gray-200">
+      <div className="w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col border border-gray-200 dark:border-gray-700">
         <div className="flex-1 overflow-y-auto">
         <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900">Start New Review</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Start New Review</h2>
         
         {/* Running Reviews - Only show currently running */}
         {runningReviews.filter(j => j.status === 'running').length > 0 && (
-          <div className="border-t border-gray-200 pt-3">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">⏳ Processing Now</h3>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">⏳ Processing Now</h3>
             <div className="space-y-2">
               {runningReviews.filter(j => j.status === 'running').map((job) => (
                 <div
                   key={job.id}
-                  className="p-3 rounded-lg bg-blue-50 border border-blue-200"
+                  className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-blue-900">
+                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
                       {job.assetsCount} assets
                     </span>
-                    <span className="text-sm font-semibold text-blue-700 animate-pulse">
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400 animate-pulse">
                       Analyzing...
                     </span>
                   </div>
-                  <div className="mt-1 h-1 bg-blue-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 animate-pulse w-full"></div>
+                  <div className="mt-1 h-1 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 dark:bg-blue-400 animate-pulse w-full"></div>
                   </div>
                 </div>
               ))}
@@ -194,9 +200,9 @@ Review for:
         
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-700">Upload Assets</label>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Upload Assets</label>
               {reviewAssets.length > 0 && (
-                <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full font-semibold">
+                <span className="text-xs bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-2 py-1 rounded-full font-semibold">
                   {reviewAssets.length} {reviewAssets.length === 1 ? 'asset' : 'assets'}
                 </span>
               )}
@@ -224,26 +230,26 @@ Review for:
             </button>
             
             {reviewAssets.length === 0 ? (
-              <p className="text-xs text-center text-gray-500 mt-2">
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
                 ⚠️ Upload assets to begin
               </p>
             ) : (
-              <p className="text-xs text-center text-green-600 mt-2">
+              <p className="text-xs text-center text-green-600 dark:text-green-400 mt-2">
                 ✓ Review will run in background
               </p>
             )}
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
               {error}
             </div>
           )}
 
           {/* Info Box */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-            <p className="font-semibold text-blue-900 mb-2">⚡ Parallel Reviews</p>
-            <ul className="text-blue-700 space-y-1 text-xs">
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+            <p className="font-semibold text-blue-900 dark:text-blue-300 mb-2">⚡ Parallel Reviews</p>
+            <ul className="text-blue-700 dark:text-blue-300 space-y-1 text-xs">
               <li>• Start a review, then upload more assets immediately</li>
               <li>• Run multiple reviews simultaneously</li>
               <li>• Reviews run in background - UI stays responsive</li>
@@ -255,13 +261,13 @@ Review for:
       </div>
 
       {/* Right - Results Display */}
-      <div className="flex-1 bg-white rounded-xl shadow-lg p-6 flex flex-col border border-gray-200">
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col border border-gray-200 dark:border-gray-700">
         <div className="flex-1 overflow-y-auto">
         {currentAudit ? (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Compliance Report</h2>
-              <div className="text-xs text-gray-500">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Compliance Report</h2>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {currentAudit.asset_reviews ? `${currentAudit.asset_reviews.length} assets analyzed` : 'Analysis complete'}
               </div>
             </div>
@@ -269,9 +275,9 @@ Review for:
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-400">
+            <div className="text-center text-gray-400 dark:text-gray-500">
               <div className="text-6xl mb-4">📊</div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No Review Selected</h3>
+              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">No Review Selected</h3>
               <p className="text-sm">Upload assets and run a review, or select from history</p>
             </div>
           </div>

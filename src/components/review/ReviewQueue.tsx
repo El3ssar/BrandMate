@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/services/api';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import type { AuditHistoryItem, AuditResult } from '@/types';
 
 interface ReviewQueueProps {
@@ -11,6 +12,7 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
   const [audits, setAudits] = useState<AuditHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; id: string | null }>({ show: false, id: null });
 
   useEffect(() => {
     loadAudits();
@@ -40,18 +42,24 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
     onSelectReview(audit.auditResult);
   };
 
-  const handleDelete = async (auditId: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (auditId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Delete this review?')) return;
+    setDeleteConfirm({ show: true, id: auditId });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
 
     try {
-      await api.deleteAudit(auditId);
-      if (selectedId === auditId) {
+      await api.deleteAudit(deleteConfirm.id);
+      if (selectedId === deleteConfirm.id) {
         setSelectedId(null);
       }
       await loadAudits();
     } catch (error) {
       console.error('Failed to delete audit:', error);
+    } finally {
+      setDeleteConfirm({ show: false, id: null });
     }
   };
 
@@ -68,10 +76,10 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8 text-gray-400">
+      <div className="flex items-center justify-center py-8 text-gray-400 dark:text-gray-500">
         <div className="text-center">
           <div className="animate-spin text-3xl mb-2">⏳</div>
-          <p className="text-sm">Loading reviews...</p>
+          <p className="text-sm dark:text-gray-400">Loading reviews...</p>
         </div>
       </div>
     );
@@ -79,17 +87,18 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
 
   if (audits.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-gray-400 dark:text-gray-500">
         <div className="text-5xl mb-3">📋</div>
-        <p className="font-semibold text-gray-600">No Reviews Yet</p>
-        <p className="text-sm mt-1">Upload assets and run your first review</p>
+        <p className="font-semibold text-gray-600 dark:text-gray-300">No Reviews Yet</p>
+        <p className="text-sm dark:text-gray-400 mt-1">Upload assets and run your first review</p>
       </div>
     );
   }
 
   return (
+    <>
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
         Review History ({audits.length})
       </h3>
       {audits.map((audit) => {
@@ -103,8 +112,8 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
             className={`
               p-3 rounded-lg cursor-pointer transition-all border-2
               ${isSelected
-                ? 'border-brand-500 bg-brand-50 shadow-md'
-                : 'border-gray-200 bg-white hover:border-brand-300 hover:shadow'
+                ? 'border-brand-500 dark:border-brand-600 bg-brand-50 dark:bg-brand-900/30 shadow-md'
+                : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-brand-300 dark:hover:border-brand-500 hover:shadow'
               }
             `}
           >
@@ -128,7 +137,7 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
                 </div>
               </div>
               <button
-                onClick={(e) => handleDelete(audit.id, e)}
+                onClick={(e) => handleDeleteClick(audit.id, e)}
                 className="text-gray-400 hover:text-red-600 transition-colors p-1"
                 title="Delete review"
               >
@@ -142,6 +151,18 @@ export function ReviewQueue({ sessionId, onSelectReview }: ReviewQueueProps) {
         );
       })}
     </div>
+    
+    <ConfirmDialog
+      isOpen={deleteConfirm.show}
+      title="Delete Review"
+      message="Are you sure you want to delete this review from history? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      danger
+      onConfirm={confirmDelete}
+      onCancel={() => setDeleteConfirm({ show: false, id: null })}
+    />
+    </>
   );
 }
 

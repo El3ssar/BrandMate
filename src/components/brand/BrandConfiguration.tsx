@@ -132,7 +132,7 @@ export function BrandConfiguration() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="card">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-brand-700 mb-2">
                 {currentSession.name}
@@ -141,20 +141,36 @@ export function BrandConfiguration() {
                 <p className="text-gray-600">{currentSession.description}</p>
               )}
             </div>
-            <div className="text-sm">
-              {saveStatus === 'saving' && (
-                <span className="text-blue-600 flex items-center gap-1">
-                  <span className="animate-spin">⏳</span> Saving...
-                </span>
-              )}
-              {saveStatus === 'saved' && (
-                <span className="text-green-600 flex items-center gap-1">
-                  ✓ Saved
-                </span>
-              )}
-              {saveStatus === 'idle' && (
-                <span className="text-gray-400 text-xs">Auto-save enabled</span>
-              )}
+            <div className="flex items-center gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">AI Provider</label>
+                <select
+                  value={currentSession.provider}
+                  onChange={async (e) => {
+                    await updateSession(currentSession.id, { provider: e.target.value as any });
+                  }}
+                  className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="gemini">Gemini (PDF support)</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="grok">Grok</option>
+                </select>
+              </div>
+              <div className="text-sm text-right">
+                {saveStatus === 'saving' && (
+                  <span className="text-blue-600 flex items-center gap-1">
+                    <span className="animate-spin">⏳</span> Saving...
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="text-green-600 flex items-center gap-1">
+                    ✓ Saved
+                  </span>
+                )}
+                {saveStatus === 'idle' && (
+                  <span className="text-gray-400 text-xs">Auto-save enabled</span>
+                )}
+              </div>
             </div>
           </div>
           {statusMessage && (
@@ -166,7 +182,7 @@ export function BrandConfiguration() {
               {statusMessage}
             </div>
           )}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
             <p className="font-semibold mb-1">📚 Configuration Guide</p>
             <p>Follow the steps below to set up your brand guidelines. All changes save automatically.</p>
           </div>
@@ -177,10 +193,10 @@ export function BrandConfiguration() {
 
         {/* Text Guidelines */}
         <div className="card">
-          <label className="block text-sm font-bold text-gray-900 mb-2">
+          <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
             📝 Step 2: Written Guidelines
           </label>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             Define your brand's typography, tone of voice, and legal requirements (e.g., required disclaimers)
           </p>
           <textarea
@@ -194,8 +210,8 @@ export function BrandConfiguration() {
 
         {/* Visual Assets */}
         <div className="card">
-          <h3 className="text-lg font-bold text-gray-900 mb-2">🖼️ Step 3: Visual Assets</h3>
-          <p className="text-sm text-gray-600 mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">🖼️ Step 3: Visual Assets</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Upload your design system and examples of approved brand usage
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,11 +234,11 @@ export function BrandConfiguration() {
         </div>
 
         {/* Product Labels */}
-        <div className="card bg-brand-50 border border-brand-200">
-          <label className="block text-sm font-bold text-gray-900 mb-2">
+        <div className="card bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800">
+          <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
             🏷️ Step 4: Product Labels (Optional)
           </label>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             If your brand includes product labels, upload examples of correct and incorrect versions
           </p>
           <textarea
@@ -253,9 +269,9 @@ export function BrandConfiguration() {
         </div>
 
         {/* Distill Button */}
-        <div className="card bg-orange-50 border border-orange-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-2">🤖 Step 5: Generate Visual Rules</h3>
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="card bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">🤖 Step 5: Generate Visual Rules</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             AI will analyze your uploaded images and create detailed visual compliance rules. This usually takes 20-30 seconds.
           </p>
           <button
@@ -269,10 +285,10 @@ export function BrandConfiguration() {
 
         {/* Visual Analysis Output */}
         <div className="card">
-          <label className="block text-sm font-bold text-gray-900 mb-2">
+          <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
             📋 Generated Visual Rules
           </label>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             AI-generated rules based on your visual assets. You can edit these if needed.
           </p>
           <textarea

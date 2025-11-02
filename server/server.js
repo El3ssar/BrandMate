@@ -154,7 +154,12 @@ app.post("/api/review", optionalAuth, async (req, res) => {
     // Save audit to history if user is authenticated and sessionId provided
     if (req.user && req.body.sessionId) {
       try {
-        auditDb.create(req.body.sessionId, req.user.id, resultJSON, assets.length);
+        // Include asset files in the result for thumbnails in history
+        const auditWithAssets = {
+          ...resultJSON,
+          _assetFiles: onlyImages  // Save asset files for thumbnails
+        };
+        auditDb.create(req.body.sessionId, req.user.id, auditWithAssets, onlyImages.length);
         console.log(`✓ Audit saved to history for session ${req.body.sessionId}`);
       } catch (auditError) {
         console.error('Failed to save audit history:', auditError);
@@ -162,7 +167,13 @@ app.post("/api/review", optionalAuth, async (req, res) => {
       }
     }
 
-    res.json({ ok: true, json: resultJSON });
+    // Also include asset files in response
+    const responseWithAssets = {
+      ...resultJSON,
+      _assetFiles: onlyImages
+    };
+
+    res.json({ ok: true, json: responseWithAssets });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: String(err.message || err) });

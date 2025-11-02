@@ -55,34 +55,36 @@ export function FileUpload({ label, accept, multiple = false, files, onChange, p
 
   return (
     <div>
-      <label className="block text-sm font-bold text-gray-700 mb-2">
-        {label}
-      </label>
+      {label && (
+        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+          {label}
+        </label>
+      )}
       <input
         ref={inputRef}
         type="file"
         accept={accept}
         multiple={multiple}
         onChange={handleFileChange}
-        className="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+        className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 dark:file:bg-brand-900/30 file:text-brand-700 dark:file:text-brand-400 hover:file:bg-brand-100 dark:hover:file:bg-brand-900/50"
       />
       <div 
         className={`mt-2 flex flex-wrap gap-2 min-h-[80px] p-2 rounded-lg border-2 transition-all ${
           isDragging 
-            ? 'border-brand-500 bg-brand-50 border-dashed' 
-            : 'border-gray-200 bg-gray-50'
+            ? 'border-brand-500 dark:border-brand-600 bg-brand-50 dark:bg-brand-900/30 border-dashed' 
+            : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         {isDragging && (
-          <div className="w-full h-full flex items-center justify-center text-brand-600 font-semibold">
+          <div className="w-full h-full flex items-center justify-center text-brand-600 dark:text-brand-400 font-semibold">
             📁 Drop files here
           </div>
         )}
         {!isDragging && files.length === 0 && (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs">
             {/* Empty - no placeholder text */}
           </div>
         )}
@@ -95,11 +97,11 @@ export function FileUpload({ label, accept, multiple = false, files, onChange, p
             return (
               <div key={fileKey} className="relative group">
                 {isPdfFile ? (
-                  <div className="image-preview-item flex flex-col items-center justify-center bg-brand-50 text-brand-700 p-2 text-xs font-semibold border border-brand-200">
+                  <div className="image-preview-item flex flex-col items-center justify-center bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 p-2 text-xs font-semibold border border-brand-200 dark:border-brand-700">
                     <div className="text-2xl mb-1">📄</div>
                     <div className="text-center">PDF</div>
                     {file.name && (
-                      <div className="text-[10px] text-gray-600 truncate w-full text-center mt-1">
+                      <div className="text-[10px] text-gray-600 dark:text-gray-400 truncate w-full text-center mt-1">
                         {file.name.substring(0, 12)}
                       </div>
                     )}
@@ -108,7 +110,7 @@ export function FileUpload({ label, accept, multiple = false, files, onChange, p
                   <img
                     src={`data:${file.mimeType};base64,${file.data}`}
                     alt={file.name || `File ${index + 1}`}
-                    className="image-preview-item"
+                    className="image-preview-item border border-gray-300 dark:border-gray-600"
                     loading="lazy"
                     onError={(e) => {
                       // Handle broken images
@@ -119,7 +121,7 @@ export function FileUpload({ label, accept, multiple = false, files, onChange, p
                 )}
                 <button
                   onClick={() => removeFile(index)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 dark:bg-red-600 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 dark:hover:bg-red-500"
                 >
                   ✕
                 </button>

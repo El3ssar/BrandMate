@@ -34,18 +34,18 @@ export function EditSessionModal({ session, onClose }: EditSessionModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Brand Session</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Edit Brand Session</h3>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Brand Name *
             </label>
             <input
@@ -59,7 +59,7 @@ export function EditSessionModal({ session, onClose }: EditSessionModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description
             </label>
             <textarea
@@ -72,7 +72,7 @@ export function EditSessionModal({ session, onClose }: EditSessionModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               AI Provider
             </label>
             <select
@@ -84,7 +84,7 @@ export function EditSessionModal({ session, onClose }: EditSessionModalProps) {
               <option value="openai">OpenAI (ChatGPT)</option>
               <option value="grok">Grok (xAI)</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Changing the provider will affect future AI operations
             </p>
           </div>
