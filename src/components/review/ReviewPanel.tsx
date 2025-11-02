@@ -169,10 +169,10 @@ Review for:
   if (!currentSession) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 dark:text-gray-400">
           <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold mb-2">No Session Selected</h3>
-          <p>Select a brand session to review assets</p>
+          <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Session Selected</h3>
+          <p className="text-gray-500 dark:text-gray-400">Select a brand session to review assets</p>
         </div>
       </div>
     );

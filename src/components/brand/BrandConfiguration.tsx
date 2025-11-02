@@ -117,11 +117,11 @@ export function BrandConfiguration() {
 
   if (!currentSession) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="text-center text-gray-500">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center text-gray-500 dark:text-gray-400">
           <div className="text-6xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold mb-2">No Session Selected</h3>
-          <p>Select a brand session from the sidebar or create a new one</p>
+          <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">No Session Selected</h3>
+          <p className="text-gray-500 dark:text-gray-400">Select a brand session from the sidebar or create a new one</p>
         </div>
       </div>
     );
