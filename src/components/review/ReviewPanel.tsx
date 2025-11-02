@@ -199,24 +199,28 @@ Review for:
         
         {/* Running Reviews - Only show currently running */}
         {runningReviews.filter(j => j.status === 'running').length > 0 && (
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mb-3">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">⏳ Processing Now</h3>
             <div className="space-y-2">
               {runningReviews.filter(j => j.status === 'running').map((job) => (
                 <div
                   key={job.id}
-                  className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+                  className="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 shadow-sm"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                      {job.assetsCount} assets
+                      {job.assetsCount} {job.assetsCount === 1 ? 'asset' : 'assets'}
                     </span>
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400 animate-pulse">
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400 animate-pulse flex items-center gap-1">
+                      <span className="inline-block animate-spin">⏳</span>
                       Analyzing...
                     </span>
                   </div>
-                  <div className="mt-1 h-1 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 dark:bg-blue-400 animate-pulse w-full"></div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mb-2">
+                    AI is reviewing against brand guidelines...
+                  </div>
+                  <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-400 rounded-full animate-pulse w-full shadow-inner"></div>
                   </div>
                 </div>
               ))}
@@ -247,7 +251,7 @@ Review for:
             <button
               onClick={handleReview}
               disabled={reviewAssets.length === 0}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-brand-600 hover:bg-brand-700 dark:bg-brand-700 dark:hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors relative overflow-hidden"
             >
               <span className="flex items-center justify-center gap-2">
                 <span>▶️</span>

@@ -86,6 +86,87 @@ NO introducción. MÁXIMO detalle.
   return data.choices?.[0]?.message?.content?.trim() || "ERROR: Sin texto.";
 }
 
+// Streaming version
+export async function destillWithGrokStream({ labelDescription, images }, onChunk) {
+  const apiKey = getGrokKey();
+  const model = getGrokModel();
+  
+  if (!apiKey) {
+    throw new Error("XAI_API_KEY is not configured.");
+  }
+
+  const systemPrompt = `
+Eres un **Destilador de Guías de Marca Visual Experto**. Crea reglas MUY detalladas basadas en las imágenes y PDFs.
+
+ESTRUCTURA (máximo detalle):
+1. TIPOGRAFÍA: Fuentes exactas, tamaños, pesos, espaciado
+2. COLORES: Códigos HEX, proporciones, jerarquía
+3. COMPOSICIÓN: Grids, márgenes, alineación
+4. ESTILO VISUAL: Fotografía, iluminación, mood
+5. LOGOTIPO: Posiciones, tamaños, clear space
+6. PRODUCTO: "${labelDescription}"
+7. ACCESIBILIDAD: Contraste, legibilidad
+
+NO introducción. MÁXIMO detalle.
+`.trim();
+
+  const userContent = [
+    ...images.map(toImagePart),
+    { type: "text", text: "Genera reglas con máximo detalle." }
+  ];
+
+  const payload = {
+    model: model,
+    stream: true,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent }
+    ]
+  };
+
+  const resp = await fetch(GROK_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Grok stream error: ${resp.status} ${t}`);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            onChunk(content);
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  }
+}
+
 export async function reviewWithGrok({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
   const apiKey = getGrokKey();
   const model = getGrokModel();

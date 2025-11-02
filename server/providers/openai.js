@@ -111,6 +111,111 @@ NO introducción. MÁXIMO detalle posible.
   return data.choices?.[0]?.message?.content?.trim() || "ERROR: Sin texto.";
 }
 
+// Streaming version
+export async function destillWithOpenAIStream({ labelDescription, images }, onChunk) {
+  const apiKey = getOpenAIKey();
+  const model = getOpenAIModel();
+  
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured.");
+  }
+
+  const systemPrompt = `
+Eres un **Destilador de Guías de Marca Visual Experto**. Analiza las imágenes y el contenido de PDFs para crear reglas de marca completas y MUY detalladas.
+
+ESTRUCTURA OBLIGATORIA (sé extremadamente específico):
+
+1. **TIPOGRAFÍA**:
+   - Familias tipográficas exactas con pesos
+   - Tamaños mínimos/máximos por elemento
+   - Espaciado entre letras, líneas
+   - Casos de uso específicos
+
+2. **PALETA DE COLORES**:
+   - Códigos HEX/RGB exactos
+   - Jerarquía de colores (primario, secundario, acento)
+   - Proporciones de uso
+   - Combinaciones permitidas/prohibidas
+
+3. **COMPOSICIÓN Y LAYOUT**:
+   - Grids, márgenes, espaciado
+   - Jerarquía visual
+   - Alineación estándar
+
+4. **ESTILO FOTOGRÁFICO/VISUAL**:
+   - Tipo de fotografía, iluminación, mood
+   - Composición, elementos requeridos
+
+5. **LOGOTIPO Y GRÁFICOS**:
+   - Posiciones, tamaños, clear space
+   - Variantes permitidas
+
+6. **PRODUCTO** (usa: "${labelDescription}"):
+   - Especificaciones exactas de versiones
+   
+7. **ACCESIBILIDAD**:
+   - Contraste mínimo, legibilidad
+
+NO introducción. MÁXIMO detalle posible.
+`.trim();
+
+  const userContent = [
+    ...images.map(toImagePart),
+    { type: "text", text: "Genera el documento de reglas según la estructura con máximo detalle." }
+  ];
+
+  const payload = {
+    model: model,
+    stream: true,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent }
+    ]
+  };
+
+  const resp = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`OpenAI stream error: ${resp.status} ${t}`);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            onChunk(content);
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  }
+}
+
 export async function reviewWithOpenAI({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
   const apiKey = getOpenAIKey();
   const model = getOpenAIModel();

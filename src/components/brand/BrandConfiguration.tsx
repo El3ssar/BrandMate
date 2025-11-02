@@ -3,6 +3,8 @@ import { useApp } from '@/store/AppContext';
 import { api } from '@/services/api';
 import { ColorPalette } from './ColorPalette';
 import { FileUpload } from './FileUpload';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { BrandColor, FileData } from '@/types';
 
 export function BrandConfiguration() {
@@ -19,6 +21,7 @@ export function BrandConfiguration() {
   const [distilling, setDistilling] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
+  const [editingRules, setEditingRules] = useState(false);
 
   // Load session data when selected
   useEffect(() => {
@@ -95,21 +98,98 @@ export function BrandConfiguration() {
 
     setDistilling(true);
     setStatusMessage('Analyzing visual context...');
+    setVisualAnalysis(''); // Clear previous content
 
     try {
-      const response = await api.distill(currentSession.provider, {
-        labelDescription,
-        images: contextImages,
-      });
+      // Try streaming first
+      const useStreaming = true;
+      
+      if (useStreaming) {
+        const response = await fetch('/api/destill', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: currentSession.provider,
+            labelDescription,
+            images: contextImages,
+            stream: true
+          }),
+        });
 
-      if (response.ok && response.data) {
-        setVisualAnalysis(response.data.text);
-        setStatusMessage('Distillation completed successfully!');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.chunk) {
+                  accumulated += data.chunk;
+                  setVisualAnalysis(accumulated);
+                }
+                if (data.done) {
+                  setStatusMessage('Distillation completed successfully!');
+                }
+                if (data.error) {
+                  setStatusMessage(`Error: ${data.error}`);
+                }
+              } catch (e) {
+                console.error('Stream parse error:', e);
+              }
+            }
+          }
+        }
+        
+        // If no content accumulated, something went wrong
+        if (!accumulated) {
+          throw new Error('No content received from stream');
+        }
       } else {
-        setStatusMessage(`Error: ${response.error}`);
+        // Fallback to non-streaming
+        const response = await api.distill(currentSession.provider, {
+          labelDescription,
+          images: contextImages,
+        });
+
+        if (response.ok && response.data) {
+          setVisualAnalysis(response.data.text);
+          setStatusMessage('Distillation completed successfully!');
+        } else {
+          setStatusMessage(`Error: ${response.error}`);
+        }
       }
     } catch (error) {
+      console.error('Distill error:', error);
       setStatusMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Try fallback to non-streaming on error
+      try {
+        const response = await api.distill(currentSession.provider, {
+          labelDescription,
+          images: contextImages,
+        });
+
+        if (response.ok && response.data) {
+          setVisualAnalysis(response.data.text);
+          setStatusMessage('Distillation completed successfully!');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setDistilling(false);
     }
@@ -272,33 +352,82 @@ export function BrandConfiguration() {
         <div className="card bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">🤖 Step 5: Generate Visual Rules</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            AI will analyze your uploaded images and create detailed visual compliance rules. This usually takes 20-30 seconds.
+            AI will analyze your uploaded images and create detailed visual compliance rules.
           </p>
           <button
             onClick={handleDistill}
             disabled={distilling}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-white font-bold py-3 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors relative overflow-hidden"
           >
-            {distilling ? '🔄 Analyzing Visual Context...' : '▶️ Distill Visual Rules'}
+            {distilling ? (
+              <>
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block animate-spin">🔄</span>
+                  Analyzing Visual Context...
+                </span>
+                <div className="absolute bottom-0 left-0 h-1 bg-orange-300 dark:bg-orange-400 animate-pulse w-full"></div>
+              </>
+            ) : (
+              '▶️ Distill Visual Rules'
+            )}
           </button>
+          {distilling && (
+            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+              <p className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-2">
+                <span className="animate-spin">⏳</span>
+                AI is analyzing your brand materials... This usually takes 20-40 seconds.
+              </p>
+              <div className="mt-2 h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse w-full"></div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Visual Analysis Output */}
         <div className="card">
-          <label className="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-            📋 Generated Visual Rules
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-bold text-gray-900 dark:text-gray-100">
+              📋 Generated Visual Rules
+            </label>
+            {visualAnalysis && !distilling && (
+              <button
+                onClick={() => setEditingRules(!editingRules)}
+                className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg font-semibold transition-colors"
+              >
+                {editingRules ? '👁️ Preview' : '✏️ Edit'}
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            AI-generated rules based on your visual assets. You can edit these if needed.
+            AI-generated rules based on your visual assets. Toggle edit mode to modify.
           </p>
-          <textarea
-            value={visualAnalysis}
-            onChange={(e) => setVisualAnalysis(e.target.value)}
-            rows={10}
-            readOnly={distilling}
-            className="w-full input-field bg-gray-50 text-sm font-mono"
-            placeholder="[Visual rules will be generated here]"
-          />
+          
+          {editingRules ? (
+            <textarea
+              value={visualAnalysis}
+              onChange={(e) => setVisualAnalysis(e.target.value)}
+              rows={15}
+              className="w-full input-field bg-gray-50 dark:bg-gray-900 text-sm font-mono"
+              placeholder="[Visual rules will be generated here]"
+            />
+          ) : (
+            <div className={`prose dark:prose-invert max-w-none p-4 rounded-lg border ${
+              visualAnalysis 
+                ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700' 
+                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+            }`}>
+              {visualAnalysis ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {visualAnalysis}
+                </ReactMarkdown>
+              ) : (
+                <p className="text-gray-400 dark:text-gray-500 italic text-sm">
+                  Visual rules will be generated here. Click "Distill Visual Rules" above.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

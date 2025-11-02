@@ -108,6 +108,119 @@ NO incluyas introducción. Solo el documento de reglas detallado y específico. 
   return text || "ERROR: Sin texto.";
 }
 
+// Streaming version
+export async function destillWithGeminiStream({ labelDescription, files }, onChunk) {
+  const apiKey = getGeminiKey();
+  
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY is not configured. Please set it in your .env file.");
+  }
+
+  const systemPrompt = `
+Eres un **Destilador de Guías de Marca Visual Experto**. Analiza TODOS los archivos proporcionados (PDFs e imágenes) para crear reglas de marca completas y detalladas.
+
+ESTRUCTURA OBLIGATORIA (sé muy específico y detallado):
+
+1. **TIPOGRAFÍA** (analiza PDFs e imágenes):
+   - Familias tipográficas exactas (nombres completos)
+   - Tamaños mínimos y máximos para titulares, subtítulos, cuerpo
+   - Pesos (weights) permitidos
+   - Espaciado entre letras y líneas
+   - Casos de uso específicos
+
+2. **PALETA DE COLORES** (extrae de PDFs e imágenes):
+   - Colores primarios con códigos HEX/RGB exactos
+   - Colores secundarios y de acento
+   - Colores de fondo permitidos
+   - Proporciones de uso
+   - Combinaciones prohibidas
+
+3. **COMPOSICIÓN Y LAYOUT**:
+   - Patrones de grid (columnas, márgenes, gutters)
+   - Espaciado y padding estándar
+   - Jerarquía visual
+   - Alineación y balance
+   - Zonas prohibidas
+
+4. **ESTILO FOTOGRÁFICO/VISUAL**:
+   - Tipo de fotografía (lifestyle, producto, editorial)
+   - Iluminación y mood
+   - Composición de imágenes
+   - Filtros o tratamiento de color
+   - Elementos que deben/no deben aparecer
+
+5. **LOGOTIPO Y GRÁFICOS**:
+   - Posicionamiento del logo (ubicaciones, tamaños)
+   - Espacio de protección (clear space)
+   - Variantes permitidas (color, monocromo, etc.)
+   - Usos incorrectos a evitar
+   - Elementos gráficos de soporte
+
+6. **REGLAS CRÍTICAS DE PRODUCTO** (usa: "${labelDescription}"):
+   - Especificaciones exactas de etiquetas/versiones
+   - Elementos obligatorios
+   - Diferencias entre versiones correctas e incorrectas
+
+7. **REGLAS DE ACCESIBILIDAD**:
+   - Contraste mínimo de texto
+   - Tamaños de texto legibles
+   - Indicadores visuales claros
+
+NO incluyas introducción. Solo el documento de reglas detallado y específico. Cuanto más detalle, mejor para el auditor posterior.
+`.trim();
+
+  const parts = [
+    ...makeInlineParts(files), 
+    { text: "Analiza TODOS los archivos (PDFs e imágenes) y genera el documento de reglas según la estructura detallada." }
+  ];
+
+  const payload = {
+    contents: [{ role: "user", parts }],
+    systemInstruction: { parts: [{ text: systemPrompt }] }
+  };
+
+  const streamURL = getGeminiURL().replace(':generateContent', ':streamGenerateContent');
+  const resp = await fetch(streamURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Gemini stream error: ${resp.status} ${t}`);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.trim() && line.startsWith('[')) {
+        try {
+          const chunks = JSON.parse(line);
+          for (const chunk of chunks) {
+            const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              onChunk(text);
+            }
+          }
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  }
+}
+
 export async function reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
   const apiKey = getGeminiKey();
   
