@@ -8,10 +8,16 @@
     "start": "node server/index.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "bcrypt": "^6.0.0",
+    "connect-sqlite3": "^0.9.16",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-session": "^1.18.2",
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "prisma": "^6.18.0"
   }
 }
-

@@ -7,6 +7,9 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+server/db/*.db
+server/db/*.sqlite
+server/db/server/
 
 # Build artifacts
 dist/

@@ -5,7 +5,10 @@ export const state = {
   fewShotImages: [],
   correctLabelImages: [],
   incorrectLabelImages: [],
-  reviewAssets: []
+  reviewAssets: [],
+  user: null,
+  workspaces: [],
+  currentWorkspaceId: null
 };
 
 export function resetArrays() {
@@ -15,4 +18,3 @@ export function resetArrays() {
   state.incorrectLabelImages.length = 0;
   state.reviewAssets.length = 0;
 }
-
