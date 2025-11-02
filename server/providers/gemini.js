@@ -165,6 +165,11 @@ Para cada asset, compara visualmente con los ejemplos aprobados y revisa:
 Si hay "CRITICAL" en cualquier asset, overall_score <= 50.
 `.trim();
 
+  // Build explicit asset name mapping for the LLM
+  const assetNameMapping = assets.map((asset, idx) => 
+    `  - Asset ${idx}: "${asset.name || `asset-${idx}`}"`
+  ).join('\n');
+
   const contextBlock = `
 --- Guías de Marca (Texto) ---
 ${brandGuidelines}
@@ -175,8 +180,12 @@ ${visualAnalysis}
 --- Reglas de Producto ---
 ${labelDescription}
 
-NOTA: Los primeros ${visualContext.length} archivos son MATERIAL DE REFERENCIA (design system, ejemplos aprobados, etiquetas).
-Los últimos ${assets.length} archivos son los ASSETS A REVISAR.
+--- ESTRUCTURA DE ARCHIVOS ---
+Primeros ${visualContext.length} archivos = REFERENCIAS (design system, ejemplos aprobados, etiquetas)
+Últimos ${assets.length} archivos = ASSETS A REVISAR (en orden):
+${assetNameMapping}
+
+IMPORTANTE: En tu respuesta JSON, para cada asset usa el "asset_name" EXACTO de la lista anterior.
 Compara los assets a revisar contra TODAS las referencias visuales proporcionadas.
   `.trim();
 

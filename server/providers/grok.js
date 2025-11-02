@@ -119,6 +119,11 @@ Responde SOLO con JSON:
 Compara directamente con las imágenes de referencia. Si hay "CRITICAL", overall_score <= 50.
 `.trim();
 
+  // Build explicit asset name mapping
+  const assetNameMapping = assets.map((asset, idx) => 
+    `  - Asset ${idx}: "${asset.name || `asset-${idx}`}"`
+  ).join('\n');
+
   const contextBlock = `
 --- Guías de Marca ---
 ${brandGuidelines}
@@ -129,8 +134,12 @@ ${visualAnalysis}
 --- Reglas de Producto ---
 ${labelDescription}
 
-NOTA: Las primeras ${visualContext.length} imágenes son REFERENCIAS APROBADAS.
-Las últimas ${assets.length} imágenes son los ASSETS A REVISAR.
+--- ARCHIVOS ---
+Primeras ${visualContext.length} imágenes = REFERENCIAS
+Últimas ${assets.length} imágenes = ASSETS A REVISAR:
+${assetNameMapping}
+
+IMPORTANTE: Usa el "asset_name" EXACTO de la lista en tu respuesta JSON.
   `.trim();
 
   // Send visual context FIRST, then assets to review

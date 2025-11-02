@@ -84,6 +84,17 @@ export function ReviewPanel() {
         ...session.incorrectLabelImages,
       ];
 
+      // Build asset list with explicit filenames for the LLM
+      const assetList = job.assets.map((asset, idx) => 
+        `Asset ${idx}: "${asset.name || `unnamed-${idx}.jpg`}"`
+      ).join('\n');
+      
+      console.log('🔍 Sending to review:', {
+        assetsCount: job.assets.length,
+        assetNames: job.assets.map(a => a.name),
+        visualContextCount: fullContext.length
+      });
+
       const response = await api.review(
         session.provider,
         session.id,
@@ -93,8 +104,16 @@ export function ReviewPanel() {
           labelDescription: session.labelDescription,
           visualContext: fullContext,  // Include all visual references
           reviewQuery: `**COMPREHENSIVE BRAND AUDIT - PER ASSET:**
-Analyze each asset individually against ALL visual references provided (design system PDF, approved examples, product labels).
+
+You will receive ${fullContext.length} REFERENCE files (design system, examples, labels) followed by ${job.assets.length} ASSETS TO REVIEW.
+
+ASSETS TO REVIEW (analyze these individually):
+${assetList}
+
+For EACH asset above, analyze against ALL visual references provided (design system PDF, approved examples, product labels).
 Compare directly with the reference materials, not just text descriptions.
+
+IMPORTANT: In your response, use the EXACT asset_name from the list above for each asset.
 
 Review for:
 1) Legal compliance (disclaimers, required text)
@@ -114,6 +133,13 @@ Review for:
           ...response.data.json,
           _assetFiles: job.assets  // Store original assets for thumbnails
         };
+        
+        console.log('✅ Review complete:', {
+          assetReviews: resultWithAssets.asset_reviews?.length,
+          assetNames: resultWithAssets.asset_reviews?.map((a: any) => a.asset_name),
+          hasAssetFiles: !!resultWithAssets._assetFiles,
+          assetFilesCount: resultWithAssets._assetFiles?.length
+        });
         
         // Update job as complete
         setRunningReviews(prev => prev.map(j => 
