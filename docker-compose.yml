@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  brand-guardian:
+    build: .
+    container_name: brand-guardian
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist database
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/brandguardian.db
+      # Mount your API keys from .env file
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - GROK_MODEL=${GROK_MODEL:-grok-2-vision-1212}
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+

@@ -1,42 +1,34 @@
-# Node.js
+# Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+package-lock.json
+
+# Environment variables
 .env
 .env.local
-.env.*.local
+.env.production
 
-# Build artifacts
+# Database
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Build outputs
 dist/
 build/
-.cache/
-.tmp/
 
-# OS
-.DS_Store
-Thumbs.db
+# Logs
+logs
+*.log
+npm-debug.log*
 
-# IDEs & Editors
+# Editor directories and files
 .vscode/
 .idea/
 *.swp
 *.swo
-*.bak
+*~
+.DS_Store
 
-# Logs
-logs/
-*.log
-
-# Test & Temp files
+# Test files (optional, keep if needed for testing)
 Test_files/
-*.zip
-
-# Coverage / reports
-coverage/
-*.lcov
-
-# Misc
-*.tgz
-

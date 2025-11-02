@@ -1,37 +1,98 @@
 import fetch from "node-fetch";
 
-const GEMINI_API_KEY = process.env.GOOGLE_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY || "")}`;
-
-if (!GEMINI_API_KEY) {
-  console.warn("[WARN] GOOGLE_API_KEY no configurada: rutas Gemini fallarán.");
+function getGeminiKey() {
+  return process.env.GOOGLE_API_KEY;
 }
 
-function makeInlineParts(images) {
-  return images.map(f => ({
+function getGeminiModel() {
+  return process.env.GEMINI_MODEL || "gemini-1.5-flash";
+}
+
+function getGeminiURL() {
+  const model = getGeminiModel();
+  const key = getGeminiKey();
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key || "")}`;
+}
+
+function makeInlineParts(files) {
+  // Gemini supports both images AND PDFs natively via inlineData
+  return files.map(f => ({
     inlineData: { mimeType: f.mimeType, data: f.data }
   }));
 }
 
-export async function destillWithGemini({ labelDescription, images }) {
+export async function destillWithGemini({ labelDescription, files }) {
+  const apiKey = getGeminiKey();
+  
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY is not configured. Please set it in your .env file.");
+  }
+
+  // Gemini can handle PDFs natively, so we pass all files (images + PDFs) directly
   const systemPrompt = `
-Eres un **Destilador de Guías de Marca Visual**. Resume reglas visuales y de producto para reemplazar referencias gráficas.
-Estructura obligatoria:
-1. Estilo Fotográfico/Estético.
-2. Reglas de Logotipo/Gráficos.
-3. Reglas CRÍTICAS de Etiquetas (usa: "${labelDescription}").
-No introducción; solo el documento de reglas.
+Eres un **Destilador de Guías de Marca Visual Experto**. Analiza TODOS los archivos proporcionados (PDFs e imágenes) para crear reglas de marca completas y detalladas.
+
+ESTRUCTURA OBLIGATORIA (sé muy específico y detallado):
+
+1. **TIPOGRAFÍA** (analiza PDFs e imágenes):
+   - Familias tipográficas exactas (nombres completos)
+   - Tamaños mínimos y máximos para titulares, subtítulos, cuerpo
+   - Pesos (weights) permitidos
+   - Espaciado entre letras y líneas
+   - Casos de uso específicos
+
+2. **PALETA DE COLORES** (extrae de PDFs e imágenes):
+   - Colores primarios con códigos HEX/RGB exactos
+   - Colores secundarios y de acento
+   - Colores de fondo permitidos
+   - Proporciones de uso
+   - Combinaciones prohibidas
+
+3. **COMPOSICIÓN Y LAYOUT**:
+   - Patrones de grid (columnas, márgenes, gutters)
+   - Espaciado y padding estándar
+   - Jerarquía visual
+   - Alineación y balance
+   - Zonas prohibidas
+
+4. **ESTILO FOTOGRÁFICO/VISUAL**:
+   - Tipo de fotografía (lifestyle, producto, editorial)
+   - Iluminación y mood
+   - Composición de imágenes
+   - Filtros o tratamiento de color
+   - Elementos que deben/no deben aparecer
+
+5. **LOGOTIPO Y GRÁFICOS**:
+   - Posicionamiento del logo (ubicaciones, tamaños)
+   - Espacio de protección (clear space)
+   - Variantes permitidas (color, monocromo, etc.)
+   - Usos incorrectos a evitar
+   - Elementos gráficos de soporte
+
+6. **REGLAS CRÍTICAS DE PRODUCTO** (usa: "${labelDescription}"):
+   - Especificaciones exactas de etiquetas/versiones
+   - Elementos obligatorios
+   - Diferencias entre versiones correctas e incorrectas
+
+7. **REGLAS DE ACCESIBILIDAD**:
+   - Contraste mínimo de texto
+   - Tamaños de texto legibles
+   - Indicadores visuales claros
+
+NO incluyas introducción. Solo el documento de reglas detallado y específico. Cuanto más detalle, mejor para el auditor posterior.
 `.trim();
 
-  const parts = [...makeInlineParts(images), { text: "Genera el documento de reglas según la estructura." }];
+  const parts = [
+    ...makeInlineParts(files), 
+    { text: "Analiza TODOS los archivos (PDFs e imágenes) y genera el documento de reglas según la estructura detallada." }
+  ];
 
   const payload = {
     contents: [{ role: "user", parts }],
     systemInstruction: { parts: [{ text: systemPrompt }] }
   };
 
-  const resp = await fetch(GEMINI_URL, {
+  const resp = await fetch(getGeminiURL(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -47,40 +108,83 @@ No introducción; solo el documento de reglas.
   return text || "ERROR: Sin texto.";
 }
 
-export async function reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets }) {
+export async function reviewWithGemini({ brandGuidelines, visualAnalysis, labelDescription, reviewQuery, assets, visualContext = [] }) {
+  const apiKey = getGeminiKey();
+  
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY is not configured. Please set it in your .env file.");
+  }
+
   const systemPrompt = `
-Eres un **Auditor de Brand Compliance Senior**. Compara los assets con las reglas textuales (guías + análisis destilado).
+Eres un **Auditor de Brand Compliance Senior Experto**. 
+
+IMPORTANTE: Tienes acceso a:
+1. El PDF del design system completo
+2. Ejemplos APROBADOS de uso correcto de marca
+3. Ejemplos de etiquetas correctas e incorrectas
+4. Las reglas textuales destiladas
+
+Compara los assets A REVISAR directamente contra TODOS estos materiales de referencia visual.
+NO te limites solo al texto destilado - MIRA las referencias visuales directamente.
+
+Analiza CADA ASSET INDIVIDUALMENTE y proporciona feedback específico.
+
 Responde SOLO con JSON del esquema:
 {
  "overall_score": integer 0..100,
  "overall_verdict": "APROBADO"|"REQUIERE_AJUSTES"|"RECHAZADO",
- "review_details": [
+ "asset_reviews": [
    {
-     "finding_type": "CUMPLIMIENTO"|"INFRACCION",
-     "module": "Visual"|"Tipografia"|"Legal/Tono"|"Producto"|"Accesibilidad",
-     "description": string,
-     "severity": "CRITICAL"|"HIGH"|"MEDIUM"|"LOW"|"N/A",
-     "feedback": string
+     "asset_index": integer (0, 1, 2...),
+     "asset_name": string (si está disponible),
+     "score": integer 0..100,
+     "verdict": "APROBADO"|"REQUIERE_AJUSTES"|"RECHAZADO",
+     "summary": string (resumen breve del asset),
+     "findings": [
+       {
+         "finding_type": "CUMPLIMIENTO"|"INFRACCION",
+         "module": "Visual"|"Tipografia"|"Legal/Tono"|"Producto"|"Accesibilidad"|"Composicion",
+         "description": string (detallado y específico),
+         "severity": "CRITICAL"|"HIGH"|"MEDIUM"|"LOW"|"N/A",
+         "feedback": string (acción correctiva específica)
+       }
+     ]
    }
  ]
 }
-Si hay "CRITICAL", overall_score <= 50.
+
+Para cada asset, compara visualmente con los ejemplos aprobados y revisa:
+- Tipografía (fuentes, tamaños, jerarquía) - compara con PDF y ejemplos
+- Colores (paleta, proporciones, contraste) - verifica contra ejemplos
+- Composición (layout, espaciado, alineación) - similar a ejemplos aprobados?
+- Logo (posición, tamaño, clear space) - como en los ejemplos?
+- Legal (disclaimers obligatorios) - verifica en PDF
+- Producto (versión correcta, etiquetas) - compara con ejemplos de etiquetas
+- Accesibilidad (legibilidad, contraste)
+
+Si hay "CRITICAL" en cualquier asset, overall_score <= 50.
 `.trim();
 
   const contextBlock = `
---- Guías de Marca ---
+--- Guías de Marca (Texto) ---
 ${brandGuidelines}
 
 --- Análisis Visual Destilado ---
 ${visualAnalysis}
 
---- Reglas de Producto (extra) ---
+--- Reglas de Producto ---
 ${labelDescription}
+
+NOTA: Los primeros ${visualContext.length} archivos son MATERIAL DE REFERENCIA (design system, ejemplos aprobados, etiquetas).
+Los últimos ${assets.length} archivos son los ASSETS A REVISAR.
+Compara los assets a revisar contra TODAS las referencias visuales proporcionadas.
   `.trim();
 
+  // CRITICAL: Send visual context FIRST, then assets to review
   const parts = [
-    ...makeInlineParts(assets),
-    { text: `INSTRUCCIÓN: ${reviewQuery}\n\nContexto:\n${contextBlock}\nDevuelve SOLO JSON.` }
+    ...makeInlineParts(visualContext),  // Reference materials FIRST
+    ...makeInlineParts(assets),         // Assets to review AFTER
+    { text: `INSTRUCCIÓN: ${reviewQuery}\n\nAnaliza CADA ASSET (los últimos ${assets.length}) INDIVIDUALMENTE comparándolos contra las REFERENCIAS VISUALES (los primeros ${visualContext.length} archivos).\n\nContexto Textual:\n${contextBlock}\n\nDevuelve SOLO JSON con el esquema especificado.` }
   ];
 
   const payload = {
@@ -91,7 +195,7 @@ ${labelDescription}
     }
   };
 
-  const resp = await fetch(GEMINI_URL, {
+  const resp = await fetch(getGeminiURL(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)

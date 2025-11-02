@@ -1,0 +1,284 @@
+import React, { useState, useEffect } from 'react';
+import { useApp } from '@/store/AppContext';
+import { api } from '@/services/api';
+import { FileUpload } from '../brand/FileUpload';
+import { ReviewQueue } from './ReviewQueue';
+import { AuditResultCard } from '../brand/AuditResultCard';
+import type { FileData, AuditResult } from '@/types';
+import type { ReviewJob } from '@/types/review';
+
+export function ReviewPanel() {
+  const { currentSession } = useApp();
+  const [reviewAssets, setReviewAssets] = useState<FileData[]>([]);
+  const [currentAudit, setCurrentAudit] = useState<AuditResult | null>(null);
+  const [runningReviews, setRunningReviews] = useState<ReviewJob[]>([]);
+  const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Load last audit when session changes
+  useEffect(() => {
+    if (currentSession) {
+      loadLastAudit();
+    } else {
+      setCurrentAudit(null);
+    }
+  }, [currentSession]);
+
+  const loadLastAudit = async () => {
+    if (!currentSession) return;
+    
+    try {
+      const response = await api.getSessionAudits(currentSession.id);
+      if (response.ok && response.data && response.data.length > 0) {
+        setCurrentAudit(response.data[0].auditResult);
+      }
+    } catch (err) {
+      console.error('Failed to load last audit:', err);
+    }
+  };
+
+  const handleReview = async () => {
+    if (!currentSession) return;
+
+    if (reviewAssets.length === 0) {
+      setError('Upload at least one asset to review.');
+      return;
+    }
+
+    if (!currentSession.visualAnalysis || currentSession.visualAnalysis.includes('[Visual rules')) {
+      setError('Please distill visual rules first in the Brand Configuration tab.');
+      return;
+    }
+
+    // Create review job
+    const jobId = `review-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const assetsToReview = [...reviewAssets]; // Copy assets
+    
+    const newJob: ReviewJob = {
+      id: jobId,
+      sessionId: currentSession.id,
+      assets: assetsToReview,
+      status: 'running',
+      createdAt: new Date().toISOString(),
+      assetsCount: assetsToReview.length
+    };
+
+    // Add to running reviews
+    setRunningReviews(prev => [newJob, ...prev]);
+    
+    // Clear upload area for next batch
+    setReviewAssets([]);
+    setError('');
+
+    // Run review asynchronously (non-blocking)
+    runReviewJob(newJob, currentSession);
+  };
+
+  const runReviewJob = async (job: ReviewJob, session: any) => {
+    try {
+      // CRITICAL: Include ALL visual context - PDF, examples, labels
+      const fullContext = [
+        ...session.designSystemPdf,
+        ...session.fewShotImages,
+        ...session.correctLabelImages,
+        ...session.incorrectLabelImages,
+      ];
+
+      const response = await api.review(
+        session.provider,
+        session.id,
+        {
+          brandGuidelines: session.textGuidelines,
+          visualAnalysis: session.visualAnalysis,
+          labelDescription: session.labelDescription,
+          visualContext: fullContext,  // Include all visual references
+          reviewQuery: `**COMPREHENSIVE BRAND AUDIT - PER ASSET:**
+Analyze each asset individually against ALL visual references provided (design system PDF, approved examples, product labels).
+Compare directly with the reference materials, not just text descriptions.
+
+Review for:
+1) Legal compliance (disclaimers, required text)
+2) Product elements (versions, labels, specs)
+3) Visual aesthetics (composition, hierarchy, balance)
+4) Typography (fonts, sizes, alignment, readability)
+5) Colors (palette adherence, contrast, proportions)
+6) Logo usage (placement, size, clear space)
+7) Accessibility (legibility, contrast ratios)`,
+          assets: job.assets,
+        }
+      );
+
+      if (response.ok && response.data) {
+        // Update job as complete
+        setRunningReviews(prev => prev.map(j => 
+          j.id === job.id 
+            ? { ...j, status: 'complete', result: response.data.json, completedAt: new Date().toISOString() }
+            : j
+        ));
+        setCurrentAudit(response.data.json);
+        setRefreshKey(prev => prev + 1); // Refresh queue
+      } else {
+        // Update job as error
+        setRunningReviews(prev => prev.map(j => 
+          j.id === job.id 
+            ? { ...j, status: 'error', error: response.error || 'Review failed', completedAt: new Date().toISOString() }
+            : j
+        ));
+      }
+    } catch (err) {
+      setRunningReviews(prev => prev.map(j => 
+        j.id === job.id 
+          ? { ...j, status: 'error', error: err instanceof Error ? err.message : 'Unknown error', completedAt: new Date().toISOString() }
+          : j
+      ));
+    }
+  };
+
+  if (!currentSession) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center text-gray-500">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-semibold mb-2">No Session Selected</h3>
+          <p>Select a brand session to review assets</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex gap-6 p-6">
+      {/* Left Sidebar - Review Queue */}
+      <div className="w-80 bg-white rounded-xl shadow-lg p-4 flex flex-col border border-gray-200">
+        <div className="flex-1 overflow-y-auto">
+          <ReviewQueue
+            key={refreshKey}
+            sessionId={currentSession.id}
+            onSelectReview={setCurrentAudit}
+          />
+        </div>
+      </div>
+
+      {/* Center - Upload & Controls */}
+      <div className="w-96 bg-white rounded-xl shadow-lg p-6 flex flex-col border border-gray-200">
+        <div className="flex-1 overflow-y-auto">
+        <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900">Start New Review</h2>
+        
+        {/* Running Reviews - Only show currently running */}
+        {runningReviews.filter(j => j.status === 'running').length > 0 && (
+          <div className="border-t border-gray-200 pt-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">⏳ Processing Now</h3>
+            <div className="space-y-2">
+              {runningReviews.filter(j => j.status === 'running').map((job) => (
+                <div
+                  key={job.id}
+                  className="p-3 rounded-lg bg-blue-50 border border-blue-200"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-blue-900">
+                      {job.assetsCount} assets
+                    </span>
+                    <span className="text-sm font-semibold text-blue-700 animate-pulse">
+                      Analyzing...
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1 bg-blue-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 animate-pulse w-full"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-gray-700">Upload Assets</label>
+              {reviewAssets.length > 0 && (
+                <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full font-semibold">
+                  {reviewAssets.length} {reviewAssets.length === 1 ? 'asset' : 'assets'}
+                </span>
+              )}
+            </div>
+            <FileUpload
+              label=""
+              accept="image/*"
+              multiple
+              files={reviewAssets}
+              onChange={setReviewAssets}
+              placeholder="Drop campaign images here or click to upload"
+            />
+          </div>
+
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleReview}
+              disabled={reviewAssets.length === 0}
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span>▶️</span>
+                Start Review ({reviewAssets.length} {reviewAssets.length === 1 ? 'asset' : 'assets'})
+              </span>
+            </button>
+            
+            {reviewAssets.length === 0 ? (
+              <p className="text-xs text-center text-gray-500 mt-2">
+                ⚠️ Upload assets to begin
+              </p>
+            ) : (
+              <p className="text-xs text-center text-green-600 mt-2">
+                ✓ Review will run in background
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Info Box */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+            <p className="font-semibold text-blue-900 mb-2">⚡ Parallel Reviews</p>
+            <ul className="text-blue-700 space-y-1 text-xs">
+              <li>• Start a review, then upload more assets immediately</li>
+              <li>• Run multiple reviews simultaneously</li>
+              <li>• Reviews run in background - UI stays responsive</li>
+              <li>• All reviews save to history automatically</li>
+            </ul>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Right - Results Display */}
+      <div className="flex-1 bg-white rounded-xl shadow-lg p-6 flex flex-col border border-gray-200">
+        <div className="flex-1 overflow-y-auto">
+        {currentAudit ? (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Compliance Report</h2>
+              <div className="text-xs text-gray-500">
+                {currentAudit.asset_reviews ? `${currentAudit.asset_reviews.length} assets analyzed` : 'Analysis complete'}
+              </div>
+            </div>
+            <AuditResultCard result={currentAudit} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-400">
+              <div className="text-6xl mb-4">📊</div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No Review Selected</h3>
+              <p className="text-sm">Upload assets and run a review, or select from history</p>
+            </div>
+          </div>
+        )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
