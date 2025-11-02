@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Brand Guardian IA — Auditor Multimodal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial; }
+    .image-preview-item { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);}
+    .color-display { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #d1d5db; }
+  </style>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 min-h-screen">
+  <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-xl p-6 md:p-10">
+    <header class="mb-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <h1 class="text-3xl font-extrabold text-indigo-600">Brand Guardian IA</h1>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold">Proveedor:</label>
+          <select id="providerSelect" class="border rounded-lg px-3 py-2 text-sm">
+            <option value="gemini">Gemini</option>
+            <option value="openai">ChatGPT (OpenAI)</option>
+            <option value="grok">Grok (xAI)</option>
+          </select>
+        </div>
+      </div>
+      <p class="text-gray-600 mt-1">
+        RAG multimodal para asegurar el <strong>Compliance de Marca</strong> con configuración portable.
+      </p>
+      <div id="configStatus" class="mt-3 p-3 text-sm bg-blue-100 text-blue-800 rounded-lg shadow-inner">
+        Sistema listo. Cargue o configure una plantilla de marca.
+      </div>
+      <div id="processStatus" class="mt-2 p-3 text-sm rounded-lg shadow-inner hidden"></div>
+    </header>
+
+    <div class="lg:grid lg:grid-cols-5 lg:gap-8">
+      <!-- Columna izquierda -->
+      <section class="lg:col-span-3 space-y-6">
+
+        <!-- Cargar/Descargar -->
+        <div class="flex gap-3">
+          <input type="file" id="loadConfigInput" accept=".json" class="hidden">
+          <button id="btnLoadConfig" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">
+            Cargar Configuración (.json)
+          </button>
+          <button id="btnDownloadConfig" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow">
+            Descargar Configuración (.json)
+          </button>
+        </div>
+
+        <!-- Paleta -->
+        <div class="p-4 border rounded-lg bg-gray-50">
+          <label class="block text-sm font-bold text-gray-900 mb-2">1.1.1 Paleta de Colores</label>
+          <div id="colorList" class="space-y-2 mb-3"></div>
+          <div class="flex gap-2">
+            <input id="newColorName" class="flex-1 p-2 border rounded-lg text-sm" placeholder="Nombre (Principal, Acento)" value="Principal"/>
+            <input id="newColorHexPicker" type="color" class="w-10 h-10 rounded-lg cursor-pointer" value="#1E3A8A">
+            <input id="newColorHex" class="w-28 p-2 border rounded-lg text-sm uppercase" value="#1E3A8A" placeholder="#HEX"/>
+            <button id="btnAddColor" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-2 rounded-lg">Añadir</button>
+          </div>
+        </div>
+
+        <!-- Directrices -->
+        <div>
+          <label class="block text-sm font-bold text-gray-900 mb-2">1.1.2 Directrices Escritas</label>
+          <textarea id="brandGuidelines" rows="10" class="w-full p-3 border rounded-lg text-sm">
+# MANUAL DE MARCA - [NOMBRE DE LA MARCA]
+
+## 1. Identidad Visual Estructural (Reglas no visuales)
+### A. Paleta de Colores: (Generada dinámicamente)
+### B. Tipografía: Titulares (Montserrat Bold, min 32px), Cuerpo (Roboto Regular, min 16px).
+
+## 2. Identidad Verbal y Legal
+### A. Tono de Voz: Profesional, inspirador y directo. Evitar jerga y contracciones.
+### B. Regla Legal CRÍTICA (Disclaimers): Si se menciona el Claim "Ahorra un 30% en energía", es OBLIGATORIO incluir el disclaimer: "*Cálculo basado en el modelo PRO-2000 vs. modelos de 2023.*"
+          </textarea>
+        </div>
+
+        <!-- Visuales -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-bold mb-2">1.2.1 Design System / Manual (PDF)</label>
+            <input id="designSystemPdf" type="file" accept=".pdf" class="w-full p-2 border rounded-lg">
+            <div id="designSystemPreview" class="mt-2 flex flex-wrap gap-2 min-h-[50px] p-2 bg-white rounded-lg border">
+              <span class="text-gray-400 text-xs">Sube el PDF.</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-bold mb-2">1.2.2 5 Ejemplos de Uso Correcto (Imágenes)</label>
+            <input id="fewShotImages" type="file" accept="image/*" multiple class="w-full p-2 border rounded-lg">
+            <div id="fewShotPreview" class="mt-2 flex flex-wrap gap-2 min-h-[50px] p-2 bg-white rounded-lg border">
+              <span class="text-gray-400 text-xs">Sube 5 assets APROBADOS.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Etiquetas -->
+        <div class="border p-4 rounded-lg bg-indigo-50">
+          <label class="block text-sm font-bold text-gray-900 mb-2">1.3 Etiquetas de Producto</label>
+          <textarea id="labelDescription" rows="3" class="w-full p-2 border rounded-lg text-sm">La etiqueta correcta es **V2.3** con **código QR azul**. La **V2.2** usa código de barras.</textarea>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            <div>
+              <label class="block text-xs font-bold text-green-700 mb-1">Etiquetas CORRECTAS (V2.3)</label>
+              <input id="correctLabelImages" type="file" accept="image/*" multiple class="w-full p-2 border rounded-lg">
+              <div id="correctLabelPreview" class="mt-2 flex flex-wrap gap-2 min-h-[50px] p-2 bg-white rounded-lg border"></div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-red-700 mb-1">Etiquetas INCORRECTAS (V2.2)</label>
+              <input id="incorrectLabelImages" type="file" accept="image/*" multiple class="w-full p-2 border rounded-lg">
+              <div id="incorrectLabelPreview" class="mt-2 flex flex-wrap gap-2 min-h-[50px] p-2 bg-white rounded-lg border"></div>
+            </div>
+          </div>
+        </div>
+
+        <button id="btnDestill" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg shadow">1.4 Destilar Reglas Visuales</button>
+
+        <div>
+          <label class="block text-sm font-bold mb-2">1.5 Reglas Visuales Destiladas</label>
+          <textarea id="visualAnalysisOutput" rows="8" readonly class="w-full p-3 border rounded-lg bg-gray-100 text-sm">[Reglas Visuales por Generar]</textarea>
+        </div>
+      </section>
+
+      <!-- Columna derecha -->
+      <section class="lg:col-span-2">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">2. Assets a Revisar</h2>
+        <div class="mb-4">
+          <label class="block text-sm font-bold mb-2">Assets (imágenes)</label>
+          <input id="assetImages" type="file" accept="image/*" multiple class="w-full p-2 border rounded-lg">
+          <div id="assetPreview" class="mt-2 flex flex-wrap gap-2 min-h-[50px] p-2 bg-white rounded-lg border">
+            <span class="text-gray-400 text-xs">Sube imágenes a evaluar. Para vídeo, sube un frame.</span>
+          </div>
+        </div>
+
+        <textarea id="reviewQuery" rows="6" class="w-full p-3 border rounded-lg text-sm mb-4">**AUDITORÍA COMPLETA:**
+1) Legal (disclaimer).
+2) Producto crítico (V2.3).
+3) Estética/composición vs destilación.
+4) Tipografía y color.</textarea>
+
+        <button id="btnReview" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2">
+          <span id="reviewIcon">📋</span>
+          <span id="reviewText">Revisar Assets</span>
+          <span id="loading" class="hidden animate-spin">⏳</span>
+        </button>
+        <div id="errorMessage" class="mt-4 text-red-600 text-sm hidden p-2 bg-red-50 border rounded-lg"></div>
+      </section>
+    </div>
+
+    <section class="mt-10 pt-6 border-t">
+      <h2 class="text-xl font-bold text-gray-800 mb-3">3. Compliance Audit Card</h2>
+      <div id="resultContainer" class="min-h-[200px] bg-gray-50 p-5 rounded-lg border text-gray-700 whitespace-pre-wrap">
+        El informe aparecerá aquí.
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
+
