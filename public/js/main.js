@@ -1,10 +1,11 @@
 import { state } from "./state.js";
 import { els, setStatus, hide, show, renderColorList, renderAuditCard } from "./ui.js";
 import { handleFileInput } from "./files.js";
-import { initializeDefaults, addColor, getAllConfigData, wireDownloadLoadButtons } from "./storage.js";
+import { initializeDefaults, addColor, wireDownloadLoadButtons, applyConfig } from "./storage.js";
 import { ensureVisualAnalysisReady } from "./validators.js";
 import { runDistill } from "./adapters/distill.js";
 import { runReview } from "./adapters/review.js";
+import { apiCurrentUser } from "./adapters/apiClient.js";
 
 function injectPaletteIntoGuidelines() {
   const colors = state.brandColors.map(c => `- **${c.name}:** ${c.hex}`).join("\n");
@@ -126,13 +127,31 @@ function wireInputs() {
   });
 }
 
-function boot() {
+async function loadRemoteWorkspaces() {
+  try {
+    const session = await apiCurrentUser();
+    state.user = session?.user ?? null;
+    const workspaces = session?.workspaces ?? [];
+    state.workspaces = workspaces;
+    if (workspaces.length > 0) {
+      const [first] = workspaces;
+      state.currentWorkspaceId = first.id;
+      applyConfig(first.data || {});
+      setStatus(els.configStatus, "ok", `Workspace "${first.name}" cargado.`);
+    }
+  } catch (err) {
+    console.warn("No se pudieron cargar los workspaces", err);
+    setStatus(els.configStatus, "info", "Inicia sesión para sincronizar tus workspaces.");
+  }
+}
+
+async function boot() {
   state.provider = els.providerSelect.value;
   initializeDefaults();
   renderColorList();
   setStatus(els.configStatus, "info", "Sistema listo. Carga/ajusta la configuración.");
+  await loadRemoteWorkspaces();
 }
 
 wireInputs();
 boot();
-
