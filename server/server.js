@@ -138,7 +138,7 @@ app.post("/api/review", optionalAuth, async (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true, message: "Brand Guardian API is running" });
+  res.json({ ok: true, message: "Braid API is running" });
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -150,7 +150,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = Number(process.env.PORT || 3000);
 app.listen(PORT, () => {
-  console.log(`✓ Brand Guardian running on http://localhost:${PORT}`);
+  console.log(`✓ Braid running on http://localhost:${PORT}`);
   console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

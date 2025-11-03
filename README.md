@@ -1,8 +1,8 @@
-# Brand Guardian AI
+# Brand Intelligence Design (Braid)
 
 **AI-Powered Brand Compliance Platform for Creative Directors**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://github.com/yourusername/brand-guardian)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://github.com/yourusername/braid)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 
@@ -20,7 +20,7 @@ Creative teams struggle to maintain brand consistency across hundreds of marketi
 
 ## 💡 Solution
 
-Brand Guardian AI automates brand compliance auditing using advanced multimodal AI, analyzing both visual and textual brand guidelines to provide instant, detailed feedback on campaign assets.
+Brand Intelligence Design (Braid) automates brand compliance auditing using advanced multimodal AI, analyzing both visual and textual brand guidelines to provide instant, detailed feedback on campaign assets.
 
 ---
 
@@ -55,7 +55,7 @@ Brand Guardian AI automates brand compliance auditing using advanced multimodal 
 ### One-Command Setup
 ```bash
 git clone <repository-url>
-cd brand_guardian
+cd braid
 ./setup.sh  # Interactive setup wizard
 npm run dev
 ```
@@ -272,7 +272,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🌟 Why Brand Guardian?
+## 🌟 Why Braid?
 
 ### Problem
 Manual brand compliance is slow, expensive, and inconsistent.
@@ -287,4 +287,4 @@ Creative teams maintain brand excellence while scaling output 10x.
 
 **Built for creative excellence. Powered by AI.**
 
-*Brand Guardian AI - Where consistency meets creativity.*
+*Brand Intelligence Design (Braid) - Where consistency meets creativity.*

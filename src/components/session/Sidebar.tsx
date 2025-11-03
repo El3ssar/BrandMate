@@ -31,7 +31,7 @@ export function Sidebar() {
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-brand-700 dark:text-brand-400">Brand Guardian</h2>
+            <h2 className="text-xl font-bold text-brand-700 dark:text-brand-400">Braid</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleDarkMode}

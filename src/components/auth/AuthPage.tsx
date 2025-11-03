@@ -12,10 +12,10 @@ export function AuthPage() {
         <div className="text-white space-y-6 hidden lg:block">
           <div className="space-y-4">
             <h1 className="text-5xl font-extrabold tracking-tight">
-              Brand Guardian AI
+              Braid
             </h1>
             <p className="text-2xl font-light text-brand-100">
-              Your Creative Director's AI Assistant
+              Brand Intelligence Design
             </p>
           </div>
           

@@ -30,7 +30,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     <div className="w-full max-w-md mx-auto">
       <div className="card">
         <h2 className="text-2xl font-bold text-center mb-6 text-brand-700">
-          Sign In to Brand Guardian
+          Sign In to Braid
         </h2>
         
         {error && (

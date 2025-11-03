@@ -12,7 +12,7 @@ export function ImportExportButtons() {
     try {
       const response = await api.exportSessions();
       if (response.ok && response.data) {
-        const filename = `brand-guardian-export-${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `braid-export-${new Date().toISOString().split('T')[0]}.json`;
         downloadJSON(response.data, filename);
       }
     } catch (error) {

@@ -6,8 +6,8 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║          Brand Guardian AI - Setup Wizard                 ║"
-echo "║                    Version 2.0                            ║"
+echo "║                 Braid - Setup Wizard                       ║"
+echo "║                     Version 2.0                            ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 

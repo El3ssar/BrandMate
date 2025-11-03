@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Brand Guardian AI will be documented in this file.
+All notable changes to Braid will be documented in this file.
 
 ## [2.0.0] - 2025-11-02
 
@@ -141,7 +141,7 @@ Complete transformation from prototype to production-ready platform for creative
 
 ---
 
-[2.0.0]: https://github.com/yourrepo/brand-guardian/releases/tag/v2.0.0
-[1.0.0]: https://github.com/yourrepo/brand-guardian/releases/tag/v1.0.0
+[2.0.0]: https://github.com/yourrepo/Braid/releases/tag/v2.0.0
+[1.0.0]: https://github.com/yourrepo/Braid/releases/tag/v1.0.0
 
 

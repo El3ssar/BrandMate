@@ -1,8 +1,8 @@
 {
-  "name": "brand-guardian",
+  "name": "braid",
   "version": "2.1.0",
   "description": "AI-powered brand compliance platform for creative directors",
-  "author": "Brand Guardian Team",
+  "author": "Braid Team",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "NODE_ENV=production node server/server.js",
-    "db:reset": "rm -f data/brandguardian.db && node server/server.js"
+    "db:reset": "rm -f data/braid.db && node server/server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

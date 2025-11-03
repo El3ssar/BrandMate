@@ -3,7 +3,7 @@ REM Brand Guardian AI - Windows Setup Script
 
 echo.
 echo ========================================================
-echo          Brand Guardian AI - Setup Wizard
+echo                Braid - Setup Wizard
 echo                    Version 2.1.0
 echo ========================================================
 echo.

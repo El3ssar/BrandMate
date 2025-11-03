@@ -5,8 +5,8 @@ set -e
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║          Brand Guardian AI - macOS Setup                  ║"
-echo "║                    Version 2.1.0                          ║"
+echo "║                 Braid - macOS Setup                        ║"
+echo "║                    Version 2.1.0                           ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 

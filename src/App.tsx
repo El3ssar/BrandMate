@@ -11,7 +11,7 @@ function AppContent() {
       <div className="min-h-screen bg-brand-500 flex items-center justify-center">
         <div className="text-center text-white">
           <div className="text-6xl mb-4 animate-pulse">🎨</div>
-          <h2 className="text-2xl font-bold">Loading Brand Guardian...</h2>
+          <h2 className="text-2xl font-bold">Loading Braid...</h2>
         </div>
       </div>
     );

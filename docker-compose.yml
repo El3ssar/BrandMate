@@ -3,7 +3,7 @@ version: '3.8'
 services:
   brand-guardian:
     build: .
-    container_name: brand-guardian
+    container_name: braid
     ports:
       - "3000:3000"
     volumes:
@@ -12,7 +12,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_PATH=/app/data/brandguardian.db
+      - DATABASE_PATH=/app/data/braid.db
       # Mount your API keys from .env file
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
