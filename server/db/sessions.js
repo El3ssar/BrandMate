@@ -11,8 +11,9 @@ export const sessionDb = {
         id, user_id, name, description, provider,
         brand_colors, text_guidelines, label_description, visual_analysis,
         design_system_pdf, few_shot_images, correct_label_images, incorrect_label_images,
+        custom_distill_prompt, custom_review_prompt, ai_parameters,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -29,6 +30,9 @@ export const sessionDb = {
       JSON.stringify(data.fewShotImages || []),
       JSON.stringify(data.correctLabelImages || []),
       JSON.stringify(data.incorrectLabelImages || []),
+      data.customDistillPrompt || '',
+      data.customReviewPrompt || '',
+      JSON.stringify(data.aiParameters || {}),
       now,
       now
     );
@@ -132,23 +136,33 @@ export const sessionDb = {
   },
 
   _mapSession(session) {
+    // Safe JSON parsing with fallbacks
+    const safeParse = (str, fallback) => {
+      try {
+        return JSON.parse(str || fallback);
+      } catch (e) {
+        console.warn('JSON parse error, using fallback:', e.message);
+        return fallback;
+      }
+    };
+
     return {
       id: session.id,
       userId: session.user_id,
       name: session.name,
       description: session.description,
       provider: session.provider,
-      brandColors: JSON.parse(session.brand_colors || '[]'),
-      textGuidelines: session.text_guidelines,
-      labelDescription: session.label_description,
-      visualAnalysis: session.visual_analysis,
-      designSystemPdf: JSON.parse(session.design_system_pdf || '[]'),
-      fewShotImages: JSON.parse(session.few_shot_images || '[]'),
-      correctLabelImages: JSON.parse(session.correct_label_images || '[]'),
-      incorrectLabelImages: JSON.parse(session.incorrect_label_images || '[]'),
+      brandColors: safeParse(session.brand_colors, '[]'),
+      textGuidelines: session.text_guidelines || '',
+      labelDescription: session.label_description || '',
+      visualAnalysis: session.visual_analysis || '',
+      designSystemPdf: safeParse(session.design_system_pdf, '[]'),
+      fewShotImages: safeParse(session.few_shot_images, '[]'),
+      correctLabelImages: safeParse(session.correct_label_images, '[]'),
+      incorrectLabelImages: safeParse(session.incorrect_label_images, '[]'),
       customDistillPrompt: session.custom_distill_prompt || '',
       customReviewPrompt: session.custom_review_prompt || '',
-      aiParameters: JSON.parse(session.ai_parameters || '{}'),
+      aiParameters: safeParse(session.ai_parameters, '{}'),
       createdAt: session.created_at,
       updatedAt: session.updated_at
     };

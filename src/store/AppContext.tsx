@@ -38,10 +38,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (response.ok && response.data) {
           setUser(response.data);
           setIsAuthenticated(true);
-          loadSessions();
+          loadSessions().catch(err => {
+            console.error('Failed to load sessions:', err);
+          });
         } else {
           api.setToken(null);
         }
+        setLoading(false);
+      }).catch(err => {
+        console.error('Failed to get current user:', err);
         setLoading(false);
       });
     } else {

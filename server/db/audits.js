@@ -64,11 +64,20 @@ export const auditDb = {
   },
 
   _mapAudit(audit) {
+    // Safe JSON parsing with fallback
+    let auditResult;
+    try {
+      auditResult = JSON.parse(audit.audit_result || '{}');
+    } catch (e) {
+      console.warn('JSON parse error for audit result, using fallback:', e.message);
+      auditResult = {};
+    }
+
     return {
       id: audit.id,
       sessionId: audit.session_id,
       userId: audit.user_id,
-      auditResult: JSON.parse(audit.audit_result),
+      auditResult,
       assetsCount: audit.assets_count,
       createdAt: audit.created_at
     };

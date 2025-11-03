@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { BrandSession, AIParameters } from '@/types';
 
 interface GlobalConfigModalProps {
@@ -9,6 +9,11 @@ interface GlobalConfigModalProps {
 
 export function GlobalConfigModal({ session, onSave, onClose }: GlobalConfigModalProps) {
   const [params, setParams] = useState<AIParameters>(session.aiParameters || {});
+
+  // Update state when session changes
+  useEffect(() => {
+    setParams(session.aiParameters || {});
+  }, [session.aiParameters]);
 
   const providerDefaults = {
     gemini: { temperature: 0.7, maxTokens: 8192, topP: 0.95 },

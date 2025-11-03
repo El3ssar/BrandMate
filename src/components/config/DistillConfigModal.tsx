@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { BrandSession } from '@/types';
 
 interface DistillConfigModalProps {
@@ -9,6 +9,11 @@ interface DistillConfigModalProps {
 
 export function DistillConfigModal({ session, onSave, onClose }: DistillConfigModalProps) {
   const [customPrompt, setCustomPrompt] = useState(session.customDistillPrompt || '');
+
+  // Update state when session changes
+  useEffect(() => {
+    setCustomPrompt(session.customDistillPrompt || '');
+  }, [session.customDistillPrompt]);
 
   const defaultPrompt = `Analyze ALL files (PDFs and images) to create detailed brand rules.
 

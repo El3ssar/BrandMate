@@ -49,11 +49,35 @@ export function initializeDatabase() {
       few_shot_images TEXT NOT NULL DEFAULT '[]',
       correct_label_images TEXT NOT NULL DEFAULT '[]',
       incorrect_label_images TEXT NOT NULL DEFAULT '[]',
+      custom_distill_prompt TEXT NOT NULL DEFAULT '',
+      custom_review_prompt TEXT NOT NULL DEFAULT '',
+      ai_parameters TEXT NOT NULL DEFAULT '{}',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Migration: Add missing columns if they don't exist (for existing databases)
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(brand_sessions)").all();
+    const columnNames = tableInfo.map(col => col.name);
+    
+    if (!columnNames.includes('custom_distill_prompt')) {
+      db.exec('ALTER TABLE brand_sessions ADD COLUMN custom_distill_prompt TEXT NOT NULL DEFAULT ""');
+      console.log('✓ Added custom_distill_prompt column');
+    }
+    if (!columnNames.includes('custom_review_prompt')) {
+      db.exec('ALTER TABLE brand_sessions ADD COLUMN custom_review_prompt TEXT NOT NULL DEFAULT ""');
+      console.log('✓ Added custom_review_prompt column');
+    }
+    if (!columnNames.includes('ai_parameters')) {
+      db.exec('ALTER TABLE brand_sessions ADD COLUMN ai_parameters TEXT NOT NULL DEFAULT "{}"');
+      console.log('✓ Added ai_parameters column');
+    }
+  } catch (migrationError) {
+    console.warn('Migration warning:', migrationError.message);
+  }
 
   // Audit history table (optional, for tracking reviews)
   db.exec(`

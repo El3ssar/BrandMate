@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { BrandSession } from '@/types';
 
 interface ReviewConfigModalProps {
@@ -9,6 +9,11 @@ interface ReviewConfigModalProps {
 
 export function ReviewConfigModal({ session, onSave, onClose }: ReviewConfigModalProps) {
   const [customPrompt, setCustomPrompt] = useState(session.customReviewPrompt || '');
+
+  // Update state when session changes
+  useEffect(() => {
+    setCustomPrompt(session.customReviewPrompt || '');
+  }, [session.customReviewPrompt]);
 
   const defaultPrompt = `**COMPREHENSIVE BRAND AUDIT - PER ASSET:**
 
